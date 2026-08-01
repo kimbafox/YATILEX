@@ -19,6 +19,7 @@ const documents = {
 const params = new URLSearchParams(window.location.search);
 const docKey = params.get("doc") || "constitucion-bolivia";
 const query = (params.get("q") || "").trim();
+const openAssistant = params.get("assistant") === "1";
 
 const selectedDoc = documents[docKey] || documents["constitucion-bolivia"];
 
@@ -246,6 +247,13 @@ function initAssistant() {
       setAssistantLoading(false);
     }
   });
+
+  if (openAssistant) {
+    setTimeout(() => {
+      assistantInput.focus();
+      assistantInput.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 350);
+  }
 }
 
 function addAssistantMessage(role, text) {

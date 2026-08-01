@@ -7,6 +7,7 @@ const form = document.getElementById("search-form");
 const input = document.getElementById("search-input");
 const micBtn = document.getElementById("mic-btn");
 const libraryBtn = document.getElementById("library-btn");
+const assistantBtn = document.getElementById("assistant-btn");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
@@ -43,10 +44,22 @@ let carouselCenterIndex = 0;
 let carouselTimer;
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recognition;
+let recognition = null;
 let isListening = false;
 
 if (libraryBtn) {
+  libraryBtn.addEventListener("click", () => {
+    window.location.href = "biblioteca.html";
+  });
+}
+
+if (assistantBtn) {
+  assistantBtn.addEventListener("click", () => {
+    window.location.href = "lectura-pdf.html?doc=constitucion-bolivia&assistant=1";
+  });
+}
+
+if (SpeechRecognition) {
   try {
     recognition = new SpeechRecognition();
     recognition.lang = "es-ES";
@@ -56,51 +69,45 @@ if (libraryBtn) {
   } catch (error) {
     recognition = null;
   }
-if (SpeechRecognition) {
-  if (recognition) {
-    recognition.onstart = () => {
-      isListening = true;
-      micBtn.classList.add("listening");
-      setStatus("Escuchando... habla ahora.");
-    };
+}
 
-    recognition.onresult = async (event) => {
-      const transcript = event.results[0][0].transcript.trim();
-      input.value = transcript;
-      await searchByVoice(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      const errorMessages = {
-        "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
-        "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
-        "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
-        "audio-capture": "No se encontro un microfono disponible.",
-        aborted: "Busqueda por voz cancelada.",
-        network: "Error de red durante el reconocimiento de voz.",
-        "language-not-supported": "Idioma no soportado para reconocimiento de voz.",
-      };
-      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
-      setStatus(errorMessages[event.error] || `No se pudo usar el microfono: ${event.error}`);
-    };
-      aborted: "Busqueda por voz cancelada.",
-    recognition.onend = () => {
-      isListening = false;
-      micBtn.classList.remove("listening");
-    };
-  }
+if (recognition) {
+  recognition.onstart = () => {
+    isListening = true;
+    micBtn.classList.add("listening");
+    setStatus("Escuchando... habla ahora.");
   };
 
-if (!recognition) {
+  recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript.trim();
+    input.value = transcript;
+    await searchByVoice(transcript);
+  };
+
+  recognition.onerror = (event) => {
+    const errorMessages = {
+      "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
+      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
+      "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
+      "audio-capture": "No se encontro un microfono disponible.",
+      aborted: "Busqueda por voz cancelada.",
+      network: "Error de red durante el reconocimiento de voz.",
+      "language-not-supported": "Idioma no soportado para reconocimiento de voz.",
+    };
+
+    setStatus(errorMessages[event.error] || `No se pudo usar el microfono: ${event.error}`);
+  };
+
+  recognition.onend = () => {
     isListening = false;
     micBtn.classList.remove("listening");
   };
 } else {
-micBtn.addEventListener("click", () => {
+  micBtn.disabled = true;
   setStatus("Tu navegador no soporta reconocimiento de voz.");
 }
 
-micBtn.addEventListener("click", async () => {
+micBtn.addEventListener("click", () => {
   if (!recognition) {
     return;
   }
@@ -196,7 +203,7 @@ async function search(query, endpoint) {
     return;
   }
 
-  setStatus(`Buscando: \"${query}\"`);
+  setStatus(`Buscando: "${query}"`);
 
   try {
     const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
