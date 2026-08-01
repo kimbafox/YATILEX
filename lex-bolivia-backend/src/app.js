@@ -17,8 +17,8 @@ const frontendDir = frontendCandidates.find((candidate) =>
 );
 
 const runtimeFrontendDir = frontendDir || path.resolve(projectRoot, "public");
-const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash";
-const geminiApiKey = process.env.GEMINI_API_KEY;
+const geminiModel = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const geminiApiKey = String(process.env.GEMINI_API_KEY || "").trim();
 
 app.use(express.json({ limit: "1mb" }));
 

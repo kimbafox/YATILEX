@@ -6,6 +6,7 @@ const { normalizeText } = require("./searchService");
 
 function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
   const pdfTextCache = new Map();
+  const preferredModel = model || "gemini-2.0-flash";
 
   async function loadPdfTextByDocKey(docKey) {
     const selectedDoc = documentByKey[docKey];
@@ -18,9 +19,20 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
     }
 
     const absolutePath = path.join(runtimeFrontendDir, selectedDoc.pdf);
-    const fileBuffer = await fs.promises.readFile(absolutePath);
+    const fileBuffer = await fs.promises.readFile(absolutePath).catch((error) => {
+      const wrapped = new Error(`No se pudo leer el PDF: ${selectedDoc.pdf}`);
+      wrapped.userMessage = "No se pudo acceder al PDF del documento seleccionado.";
+      wrapped.cause = error;
+      throw wrapped;
+    });
     const parsed = await pdfParse(fileBuffer);
     const normalizedPdfText = (parsed.text || "").replace(/\s+/g, " ").trim();
+
+    if (!normalizedPdfText) {
+      const noTextError = new Error("PDF sin texto extraible.");
+      noTextError.userMessage = "Este PDF no contiene texto seleccionable para el asistente.";
+      throw noTextError;
+    }
 
     pdfTextCache.set(docKey, normalizedPdfText);
     return normalizedPdfText;
@@ -79,8 +91,48 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
     return selected.join(" ");
   }
 
+  async function callGeminiEndpoint({ modelName, versionPath, payload }) {
+    const endpoint = `https://generativelanguage.googleapis.com/${versionPath}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const raw = await response.text();
+        let parsedMessage = raw;
+        try {
+          const parsed = JSON.parse(raw);
+          parsedMessage = parsed?.error?.message || raw;
+        } catch {
+          // Keep raw as fallback.
+        }
+
+        const error = new Error(`Gemini API error ${response.status}: ${parsedMessage}`);
+        error.statusCode = response.status;
+        throw error;
+      }
+
+      return response.json();
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   async function askGeminiWithContext({ question, docTitle, context, history }) {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    if (typeof fetch !== "function") {
+      const fetchError = new Error("Fetch API no disponible en este runtime Node.");
+      fetchError.userMessage = "El runtime del servidor no soporta fetch. Usa Node 18 o superior.";
+      throw fetchError;
+    }
 
     const systemInstruction = [
       "Eres el asistente juridico de Yatilex.",
@@ -121,20 +173,49 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
       },
     };
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+    const modelCandidates = [
+      preferredModel,
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+      "gemini-1.5-flash-latest",
+    ];
+    const versionCandidates = ["v1beta", "v1"];
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Gemini API error ${response.status}: ${errorBody}`);
+    let data = null;
+    let lastError = null;
+
+    for (const modelName of modelCandidates) {
+      for (const versionPath of versionCandidates) {
+        try {
+          data = await callGeminiEndpoint({ modelName, versionPath, payload });
+          lastError = null;
+          break;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      if (data) {
+        break;
+      }
     }
 
-    const data = await response.json();
+    if (!data) {
+      const safeError = new Error(lastError?.message || "Error desconocido en Gemini.");
+
+      if (String(lastError?.message || "").includes("API key not valid")) {
+        safeError.userMessage = "La GEMINI_API_KEY es invalida o no tiene permisos activos.";
+      } else if (String(lastError?.message || "").toLowerCase().includes("permission")) {
+        safeError.userMessage = "La clave Gemini no tiene permiso para ese modelo.";
+      } else if (String(lastError?.name || "") === "AbortError") {
+        safeError.userMessage = "Gemini tardo demasiado en responder. Intenta nuevamente.";
+      } else {
+        safeError.userMessage = "Gemini no respondio correctamente. Revisa modelo/API key.";
+      }
+
+      throw safeError;
+    }
+
     const answer =
       data?.candidates?.[0]?.content?.parts
         ?.map((part) => part.text || "")
@@ -152,6 +233,12 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
 
     const pdfText = await loadPdfTextByDocKey(docKey);
     const context = extractRelevantContext(pdfText, question);
+
+    if (!context) {
+      const contextError = new Error("No se genero contexto del documento.");
+      contextError.userMessage = "No se encontro texto util en este documento para responder.";
+      throw contextError;
+    }
 
     return askGeminiWithContext({
       question,

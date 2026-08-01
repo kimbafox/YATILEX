@@ -75,11 +75,21 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, geminiApiKey }) {
         answer,
       });
     } catch (error) {
+      const message = error?.userMessage || "No se pudo procesar la consulta del asistente.";
+
       return res.status(500).json({
         ok: false,
-        message: "No se pudo procesar la consulta del asistente.",
+        message,
       });
     }
+  });
+
+  router.get("/assistant/status", (req, res) => {
+    return res.status(200).json({
+      ok: true,
+      geminiConfigured: Boolean(geminiApiKey),
+      model: geminiModel,
+    });
   });
 
   return router;
