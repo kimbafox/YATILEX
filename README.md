@@ -1,6 +1,7 @@
 # Proyecto_AndiLab
 Proyecto AndiLab beta 
-Aplicacion: Yandex
+
+Nombre de Aplicacion: Yandex
 
 # Tecnologias utilizadas:
 * HTML5 & CSS3
