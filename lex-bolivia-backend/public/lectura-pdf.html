@@ -30,21 +30,40 @@
       </aside>
 
       <section class="pdf-panel">
-        <h3 id="panel-title">Documento PDF</h3>
+        <div class="panel-head">
+          <h3 id="panel-title">Documento PDF</h3>
+          <span class="panel-badge">Lector Pro</span>
+        </div>
         <p id="search-highlight" class="search-highlight">Sin clausula destacada.</p>
         <div class="viewer-toolbar" aria-label="Controles del PDF">
-          <button id="prev-page" class="viewer-btn" type="button">Anterior</button>
-          <span id="page-info" class="page-info">Pagina 1 / 1</span>
-          <button id="next-page" class="viewer-btn" type="button">Siguiente</button>
-          <button id="zoom-out" class="viewer-btn" type="button">-</button>
-          <span id="zoom-info" class="page-info">100%</span>
-          <button id="zoom-in" class="viewer-btn" type="button">+</button>
-          <button id="fit-width" class="viewer-btn" type="button">Ajustar ancho</button>
-          <a id="open-native" class="viewer-link" target="_blank" rel="noopener">Abrir PDF</a>
+          <div class="tool-group" aria-label="Navegacion de paginas">
+            <button id="prev-page" class="viewer-btn" type="button">Anterior</button>
+            <span id="page-info" class="page-info">Pagina 1 / 1</span>
+            <button id="next-page" class="viewer-btn" type="button">Siguiente</button>
+          </div>
+
+          <div class="tool-group" aria-label="Zoom">
+            <button id="zoom-out" class="viewer-btn" type="button">-</button>
+            <span id="zoom-info" class="page-info">100%</span>
+            <button id="zoom-in" class="viewer-btn" type="button">+</button>
+            <button id="fit-width" class="viewer-btn" type="button">Ajustar ancho</button>
+          </div>
+
+          <div class="tool-group" aria-label="Herramientas de texto">
+            <button id="copy-selection" class="viewer-btn" type="button">Copiar seleccion</button>
+            <button id="copy-citation" class="viewer-btn" type="button" disabled>
+              Copiar cita con pagina
+            </button>
+            <button id="copy-page-text" class="viewer-btn" type="button">Copiar texto pagina</button>
+            <a id="open-native" class="viewer-link" target="_blank" rel="noopener">Abrir PDF</a>
+          </div>
         </div>
 
         <div id="pdf-viewer" class="pdf-viewer" role="region" aria-label="Visor de PDF">
-          <canvas id="pdf-canvas"></canvas>
+          <div id="pdf-stage" class="pdf-stage">
+            <canvas id="pdf-canvas"></canvas>
+            <div id="pdf-text-layer" class="pdf-text-layer" aria-label="Texto seleccionable del PDF"></div>
+          </div>
         </div>
         <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
 
