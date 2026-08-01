@@ -5,7 +5,7 @@
   "description": "Servidor principal para despliegue en Railway",
   "scripts": {
     "build": "echo Build OK",
-    "start": "node server.js"
+    "start": "node lex-bolivia-backend/server.js"
   },
   "engines": {
     "node": ">=18"
