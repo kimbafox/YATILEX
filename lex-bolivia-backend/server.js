@@ -1,9 +1,18 @@
 const express = require("express");
 const path = require("path");
+const fs = require("fs");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const FRONTEND_DIR = path.resolve(__dirname, "..", "lex-bolivia-frontend");
+const frontendCandidates = [
+  path.resolve(__dirname, "..", "lex-bolivia-frontend"),
+  path.resolve(__dirname, "lex-bolivia-frontend"),
+  path.resolve(__dirname, "public"),
+];
+
+const FRONTEND_DIR = frontendCandidates.find((candidate) =>
+  fs.existsSync(path.join(candidate, "index.html")),
+);
 
 const documents = [
   {
@@ -123,11 +132,20 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use(express.static(FRONTEND_DIR));
+if (FRONTEND_DIR) {
+  app.use(express.static(FRONTEND_DIR));
 
-app.get("/", (req, res) => {
-  return res.sendFile(path.join(FRONTEND_DIR, "index.html"));
-});
+  app.get("/", (req, res) => {
+    return res.sendFile(path.join(FRONTEND_DIR, "index.html"));
+  });
+} else {
+  app.get("/", (req, res) => {
+    return res.status(200).json({
+      ok: true,
+      message: "Backend activo, pero no se encontro el frontend en el contenedor.",
+    });
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`);
