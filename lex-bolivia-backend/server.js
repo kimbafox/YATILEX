@@ -32,51 +32,66 @@ const libraryItems = [
 ];
 
 const server = http.createServer(async (req, res) => {
-  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
-  const { pathname } = requestUrl;
+  try {
+    const host = req.headers.host || "localhost";
+    const requestUrl = new URL(req.url || "/", `http://${host}`);
+    const { pathname } = requestUrl;
 
-  setCorsHeaders(res);
+    setCorsHeaders(res);
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(204);
-    res.end();
-    return;
-  }
-
-  if (req.method === "GET" && pathname === "/api/health") {
-    sendJson(res, 200, { ok: true, service: "yatilex-backend" });
-    return;
-  }
-
-  if (req.method === "POST" && (pathname === "/api/search" || pathname === "/api/voice-search")) {
-    const payload = await parseJsonBody(req);
-    const query = (payload?.query || "").trim();
-
-    if (!query) {
-      const message =
-        pathname === "/api/voice-search"
-          ? "No llego texto reconocido por voz."
-          : "Debes enviar un termino de busqueda.";
-      sendJson(res, 400, { message, results: [] });
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
       return;
     }
 
-    const results = findResults(query);
-    const message =
-      pathname === "/api/voice-search"
-        ? `Busqueda por voz procesada para \"${query}\".`
-        : `Busqueda completada para \"${query}\".`;
+    if (req.method === "GET" && pathname === "/") {
+      sendJson(res, 200, {
+        ok: true,
+        service: "yatilex-backend",
+        message: "Servidor activo",
+      });
+      return;
+    }
 
-    sendJson(res, 200, {
-      message,
-      source: pathname === "/api/voice-search" ? "voice" : "text",
-      query,
-      results,
-    });
-    return;
+    if (req.method === "GET" && pathname === "/api/health") {
+      sendJson(res, 200, { ok: true, service: "yatilex-backend" });
+      return;
+    }
+
+    if (req.method === "POST" && (pathname === "/api/search" || pathname === "/api/voice-search")) {
+      const payload = await parseJsonBody(req);
+      const query = (payload?.query || "").trim();
+
+      if (!query) {
+        const message =
+          pathname === "/api/voice-search"
+            ? "No llego texto reconocido por voz."
+            : "Debes enviar un termino de busqueda.";
+        sendJson(res, 400, { message, results: [] });
+        return;
+      }
+
+      const results = findResults(query);
+      const message =
+        pathname === "/api/voice-search"
+          ? `Busqueda por voz procesada para \"${query}\".`
+          : `Busqueda completada para \"${query}\".`;
+
+      sendJson(res, 200, {
+        message,
+        source: pathname === "/api/voice-search" ? "voice" : "text",
+        query,
+        results,
+      });
+      return;
+    }
+
+    sendJson(res, 404, { message: "Ruta no encontrada" });
+  } catch (_error) {
+    setCorsHeaders(res);
+    sendJson(res, 500, { message: "Error interno del servidor" });
   }
-
-  sendJson(res, 404, { message: "Ruta no encontrada" });
 });
 
 function findResults(query) {
