@@ -138,7 +138,8 @@ copyCitationBtn?.addEventListener("click", async () => {
     return;
   }
 
-  const citation = `"${selected}" (Pagina ${currentPage}, ${selectedDoc.title})`;
+  const legalRef = detectLegalReference(selected, currentPageExtractedText);
+  const citation = buildCitation(selected, legalRef);
   const copied = await copyToClipboard(citation);
   setViewerStatus(copied ? "Cita con pagina copiada." : "No se pudo copiar la cita.");
 });
@@ -424,6 +425,68 @@ async function copyToClipboard(value) {
   } catch {
     return false;
   }
+}
+
+function buildCitation(selectedText, legalRef) {
+  const safeText = String(selectedText || "").replace(/\s+/g, " ").trim();
+  const base = `"${safeText}"`;
+
+  if (legalRef) {
+    return `${base} (${legalRef}, Pagina ${currentPage}, ${selectedDoc.title})`;
+  }
+
+  return `${base} (Pagina ${currentPage}, ${selectedDoc.title})`;
+}
+
+function detectLegalReference(selectedText, pageText) {
+  const directRef = extractReferenceFromText(selectedText);
+  if (directRef) {
+    return directRef;
+  }
+
+  const normalizedPage = String(pageText || "");
+  const normalizedSelected = String(selectedText || "").trim();
+  if (!normalizedPage || !normalizedSelected) {
+    return "";
+  }
+
+  const index = normalizedPage.toLowerCase().indexOf(normalizedSelected.toLowerCase());
+  if (index < 0) {
+    return "";
+  }
+
+  const start = Math.max(0, index - 280);
+  const contextWindow = normalizedPage.slice(start, index + normalizedSelected.length + 40);
+  return extractReferenceFromText(contextWindow);
+}
+
+function extractReferenceFromText(text) {
+  const value = String(text || "").replace(/\s+/g, " ");
+
+  const articleMatch =
+    value.match(/\b(art(?:iculo|\.)?)\s*([0-9]{1,4}[A-Za-z-]*)/i) ||
+    value.match(/\bart\.?\s*([0-9]{1,4}[A-Za-z-]*)/i);
+  const paragraphMatch = value.match(/\b(par(?:agrafo|\.)?)\s*([0-9]{1,4}|[IVXLCDM]+)/i);
+  const incisoMatch = value.match(/\b(inciso)\s*([a-z]|[0-9]{1,3})/i);
+
+  const parts = [];
+
+  if (articleMatch) {
+    const articleNumber = articleMatch[2] || articleMatch[1];
+    parts.push(`Articulo ${String(articleNumber).toUpperCase()}`);
+  }
+
+  if (paragraphMatch) {
+    const paragraphValue = paragraphMatch[2];
+    parts.push(`Paragrafo ${String(paragraphValue).toUpperCase()}`);
+  }
+
+  if (incisoMatch) {
+    const incisoValue = incisoMatch[2];
+    parts.push(`Inciso ${String(incisoValue).toUpperCase()}`);
+  }
+
+  return parts.join(", ");
 }
 
 function escapeHtml(value) {
