@@ -17,8 +17,7 @@
           </div>
         </div>
 
-        <button class="side-btn is-active" type="button" data-view="create">Agregar libro</button>
-        <button class="side-btn" type="button" data-view="edit">Editar libro</button>
+        <button class="side-btn is-active" type="button" data-view="edit">Editar libro</button>
         <button class="side-btn" type="button" data-view="list">Catalogo</button>
 
         <div class="side-footer">
@@ -35,38 +34,7 @@
 
         <p id="status" class="status"></p>
 
-        <section id="view-create" class="view-card">
-          <h2>Agregar nuevo libro</h2>
-          <form id="create-form" class="admin-form">
-            <label>
-              Clave unica (docKey)
-              <input name="docKey" required placeholder="ej: codigo-familia-bolivia" />
-            </label>
-            <label>
-              Titulo
-              <input name="title" required placeholder="Titulo del documento" />
-            </label>
-            <label>
-              Descripcion
-              <textarea name="description" required rows="3" placeholder="Resumen corto para busquedas"></textarea>
-            </label>
-            <label>
-              Ruta PDF (obligatorio)
-              <input name="pdf" required placeholder="pdf/mi_documento.pdf" />
-            </label>
-            <label>
-              Ruta portada (obligatorio)
-              <input name="cover" required placeholder="assets/portadas/mi_portada.png" />
-            </label>
-            <label>
-              Alias (separados por coma)
-              <input name="aliases" placeholder="codigo familia, ley familia" />
-            </label>
-            <button type="submit" class="primary-btn">Crear libro</button>
-          </form>
-        </section>
-
-        <section id="view-edit" class="view-card" hidden>
+        <section id="view-edit" class="view-card">
           <h2>Editar libro existente</h2>
           <form id="edit-form" class="admin-form">
             <label>
@@ -80,18 +48,6 @@
             <label>
               Descripcion
               <textarea name="description" required rows="3"></textarea>
-            </label>
-            <label>
-              Ruta PDF (obligatorio)
-              <input name="pdf" required />
-            </label>
-            <label>
-              Ruta portada (obligatorio)
-              <input name="cover" required />
-            </label>
-            <label>
-              Alias (separados por coma)
-              <input name="aliases" />
             </label>
             <button type="submit" class="primary-btn">Guardar cambios</button>
           </form>

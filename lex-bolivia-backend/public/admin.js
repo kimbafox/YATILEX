@@ -1,6 +1,5 @@
 const statusEl = document.getElementById("status");
 const adminUserEl = document.getElementById("admin-user");
-const createForm = document.getElementById("create-form");
 const editForm = document.getElementById("edit-form");
 const editSelect = document.getElementById("edit-select");
 const catalogList = document.getElementById("catalog-list");
@@ -41,40 +40,6 @@ sideButtons.forEach((button) => {
   });
 });
 
-createForm?.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  setStatus("Creando libro...");
-
-  const payload = formToPayload(createForm);
-  if (!payload.docKey || !payload.title || !payload.description || !payload.pdf || !payload.cover) {
-    setStatus("Completa todos los campos obligatorios.", true);
-    return;
-  }
-
-  try {
-    const response = await fetch("/api/admin/catalog", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${sessionToken}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await response.json();
-    if (!response.ok || !data?.ok) {
-      throw new Error(data?.message || "No se pudo crear el libro.");
-    }
-
-    createForm.reset();
-    setStatus("Libro creado correctamente.");
-    await loadCatalog();
-    switchView("list");
-  } catch (error) {
-    setStatus(error.message || "Error creando libro.", true);
-  }
-});
-
 editSelect?.addEventListener("change", () => {
   const selected = catalog.find((item) => item.key === editSelect.value);
   if (!selected) {
@@ -83,9 +48,6 @@ editSelect?.addEventListener("change", () => {
 
   editForm.elements.title.value = selected.title || "";
   editForm.elements.description.value = selected.description || "";
-  editForm.elements.pdf.value = selected.pdf || "";
-  editForm.elements.cover.value = selected.cover || "";
-  editForm.elements.aliases.value = (selected.aliases || []).join(", ");
 });
 
 editForm?.addEventListener("submit", async (event) => {
@@ -99,13 +61,10 @@ editForm?.addEventListener("submit", async (event) => {
   const payload = {
     title: editForm.elements.title.value.trim(),
     description: editForm.elements.description.value.trim(),
-    pdf: editForm.elements.pdf.value.trim(),
-    cover: editForm.elements.cover.value.trim(),
-    aliases: splitAliases(editForm.elements.aliases.value),
   };
 
-  if (!payload.title || !payload.description || !payload.pdf || !payload.cover) {
-    setStatus("Titulo, descripcion, PDF y portada son obligatorios.", true);
+  if (!payload.title || !payload.description) {
+    setStatus("Titulo y descripcion son obligatorios.", true);
     return;
   }
 
@@ -148,7 +107,7 @@ async function init() {
   }
 
   await loadCatalog();
-  switchView("create");
+  switchView("edit");
 }
 
 async function validateAdmin() {
@@ -257,32 +216,12 @@ function renderEditOptions() {
 }
 
 function switchView(viewKey) {
-  document.getElementById("view-create").hidden = viewKey !== "create";
   document.getElementById("view-edit").hidden = viewKey !== "edit";
   document.getElementById("view-list").hidden = viewKey !== "list";
 
   sideButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.view === viewKey);
   });
-}
-
-function splitAliases(raw) {
-  return String(raw || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
-function formToPayload(formNode) {
-  const formData = new FormData(formNode);
-  return {
-    docKey: String(formData.get("docKey") || "").trim().toLowerCase(),
-    title: String(formData.get("title") || "").trim(),
-    description: String(formData.get("description") || "").trim(),
-    pdf: String(formData.get("pdf") || "").trim(),
-    cover: String(formData.get("cover") || "").trim(),
-    aliases: splitAliases(formData.get("aliases")),
-  };
 }
 
 function setStatus(text, isError = false) {

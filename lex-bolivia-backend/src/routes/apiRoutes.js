@@ -20,6 +20,18 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     return acc;
   }, {});
 
+  function withStaticFallback(doc) {
+    const fallback = staticDocsByKey[doc?.key] || {};
+    return {
+      ...doc,
+      title: doc?.title || fallback.title || "",
+      description: doc?.description || fallback.description || "",
+      cover: doc?.cover || fallback.cover || "assets/logo.png",
+      pdf: doc?.pdf || fallback.pdf || "",
+      aliases: Array.isArray(doc?.aliases) ? doc.aliases : (fallback.aliases || []),
+    };
+  }
+
   function scoreCatalogEntry(query, doc) {
     const normalizedQuery = normalizeText(query);
     if (!normalizedQuery) {
@@ -64,7 +76,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       `,
     );
 
-    return result.rows;
+    return result.rows.map(withStaticFallback);
   }
 
   async function getCatalogDocumentByKey(docKey) {
@@ -82,7 +94,8 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       [docKey],
     );
 
-    return result.rows[0] || null;
+    const row = result.rows[0] || null;
+    return row ? withStaticFallback(row) : null;
   }
 
   async function addCatalogNotification({ eventType, docKey, docTitle, message, actorEmail }) {
@@ -583,59 +596,10 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     });
   });
 
-  router.post("/admin/catalog", requireAuth, requireAdmin, async (req, res) => {
-    if (!hasDatabase()) {
-      return res.status(503).json({
-        ok: false,
-        message: "Base de datos no configurada para admin.",
-      });
-    }
-
-    const docKey = String(req.body?.docKey || "").trim().toLowerCase();
-    const title = String(req.body?.title || "").trim();
-    const description = String(req.body?.description || "").trim();
-    const pdf = String(req.body?.pdf || "").trim();
-    const cover = String(req.body?.cover || "").trim();
-    const aliases = Array.isArray(req.body?.aliases)
-      ? req.body.aliases.map((value) => String(value || "").trim()).filter(Boolean)
-      : [];
-
-    if (!docKey || !title || !description || !pdf || !cover) {
-      return res.status(400).json({
-        ok: false,
-        message: "Debes completar docKey, titulo, descripcion, pdf y portada.",
-      });
-    }
-
-    await query(
-      `
-      INSERT INTO managed_documents (doc_key, title, description, cover, pdf, aliases, created_by_user_id, updated_by_user_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
-      ON CONFLICT (doc_key)
-      DO NOTHING
-      `,
-      [docKey, title, description, cover, pdf, aliases, req.authUser.id],
-    );
-
-    const inserted = await getCatalogDocumentByKey(docKey);
-    if (!inserted) {
-      return res.status(409).json({
-        ok: false,
-        message: "No se pudo crear el libro. Revisa si la clave ya existe.",
-      });
-    }
-
-    await addCatalogNotification({
-      eventType: "create",
-      docKey: inserted.key,
-      docTitle: inserted.title,
-      message: `Nuevo libro agregado: ${inserted.title}`,
-      actorEmail: req.authUser.email,
-    });
-
-    return res.status(201).json({
-      ok: true,
-      document: inserted,
+  router.post("/admin/catalog", requireAuth, requireAdmin, async (_req, res) => {
+    return res.status(403).json({
+      ok: false,
+      message: "La opcion agregar libros esta deshabilitada.",
     });
   });
 
@@ -658,16 +622,14 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
 
     const title = String(req.body?.title || current.title).trim();
     const description = String(req.body?.description || current.description).trim();
-    const pdf = String(req.body?.pdf || current.pdf).trim();
-    const cover = String(req.body?.cover || current.cover).trim();
-    const aliases = Array.isArray(req.body?.aliases)
-      ? req.body.aliases.map((value) => String(value || "").trim()).filter(Boolean)
-      : current.aliases || [];
+    const pdf = current.pdf;
+    const cover = current.cover;
+    const aliases = current.aliases || [];
 
-    if (!title || !description || !pdf || !cover) {
+    if (!title || !description) {
       return res.status(400).json({
         ok: false,
-        message: "Titulo, descripcion, pdf y portada son obligatorios.",
+        message: "Titulo y descripcion son obligatorios.",
       });
     }
 

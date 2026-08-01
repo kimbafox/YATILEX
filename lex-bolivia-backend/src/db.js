@@ -149,6 +149,25 @@ async function initDb() {
       );
     }
   }
+
+  for (const doc of staticDocuments) {
+    await query(
+      `
+      UPDATE managed_documents
+      SET
+        description = CASE WHEN COALESCE(description, '') = '' THEN $2 ELSE description END,
+        cover = CASE WHEN COALESCE(cover, '') = '' THEN $3 ELSE cover END,
+        pdf = CASE WHEN COALESCE(pdf, '') = '' THEN $4 ELSE pdf END,
+        aliases = CASE
+          WHEN aliases IS NULL OR cardinality(aliases) = 0 THEN $5::text[]
+          ELSE aliases
+        END,
+        updated_at = NOW()
+      WHERE doc_key = $1
+      `,
+      [doc.key, doc.description || "", doc.cover || "", doc.pdf || "", doc.aliases || []],
+    );
+  }
 }
 
 function buildToken() {
