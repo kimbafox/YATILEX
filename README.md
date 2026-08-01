@@ -32,7 +32,7 @@ Aplicacion: Yandex
 ## Back-End
 * carpeta src/: Esta carpeta contiene toda la logica del lado del servidor, encargada de proveer datos al frontend y comunicarse con inteligencias artificiales externas.
 * carpeta src/app.js: Configura el framework Express. 
-** Se encarga de configurar CORS, configura el servidor para que pueda entender datos enviados en formato JSON, conecta la ruta base /api con todas las rutas definidas en el archivo de rutas y tiene una ruta /health que sirve como un "latido" para comprobar que el servidor esta vivo y funcionando.
+* Se encarga de configurar CORS, configura el servidor para que pueda entender datos enviados en formato JSON, conecta la ruta base /api con todas las rutas definidas en el archivo de rutas y tiene una ruta /health que sirve como un "latido" para comprobar que el servidor esta vivo y funcionando.
 
 * carpeta src/routes/apiRoutes.js: Crea el enrutador principal del sistema.
 * createApiRouter: Inicializa el enrutador y los servicios.
