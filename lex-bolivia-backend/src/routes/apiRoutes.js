@@ -1,6 +1,6 @@
 const express = require("express");
 const { documents } = require("../config/documents");
-const { searchDocuments } = require("../services/searchService");
+const { normalizeText } = require("../services/searchService");
 const { createAssistantService } = require("../services/assistantService");
 const { verifyGoogleIdToken } = require("../services/authService");
 const { hasDatabase, query, buildToken, hashToken } = require("../db");
@@ -8,16 +8,96 @@ const { hasDatabase, query, buildToken, hashToken } = require("../db");
 function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
   const router = express.Router();
   const googleClientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+  const adminEmail = "juegocrisger@gmail.com";
   const assistantService = createAssistantService({
     runtimeFrontendDir,
     model: geminiModel,
     apiKey: assistantApiKey,
   });
 
-  const docsByKey = documents.reduce((acc, doc) => {
+  const staticDocsByKey = documents.reduce((acc, doc) => {
     acc[doc.key] = doc;
     return acc;
   }, {});
+
+  function scoreCatalogEntry(query, doc) {
+    const normalizedQuery = normalizeText(query);
+    if (!normalizedQuery) {
+      return 0;
+    }
+
+    const tokens = normalizedQuery.split(" ").filter(Boolean);
+    const aliasText = Array.isArray(doc.aliases) ? doc.aliases.join(" ") : "";
+    const target = normalizeText(`${doc.title} ${aliasText}`);
+
+    let score = 0;
+    if (target.includes(normalizedQuery)) {
+      score += 3;
+    }
+
+    tokens.forEach((token) => {
+      if (target.includes(token)) {
+        score += 1;
+      }
+    });
+
+    return score;
+  }
+
+  async function listCatalog() {
+    if (!hasDatabase()) {
+      return documents.map((doc) => ({
+        key: doc.key,
+        title: doc.title,
+        description: doc.description,
+        cover: doc.cover || "",
+        pdf: doc.pdf || "",
+        aliases: doc.aliases || [],
+      }));
+    }
+
+    const result = await query(
+      `
+      SELECT doc_key AS key, title, description, cover, pdf, aliases
+      FROM managed_documents
+      ORDER BY title ASC
+      `,
+    );
+
+    return result.rows;
+  }
+
+  async function getCatalogDocumentByKey(docKey) {
+    if (!hasDatabase()) {
+      return staticDocsByKey[docKey] || null;
+    }
+
+    const result = await query(
+      `
+      SELECT doc_key AS key, title, description, cover, pdf, aliases
+      FROM managed_documents
+      WHERE doc_key = $1
+      LIMIT 1
+      `,
+      [docKey],
+    );
+
+    return result.rows[0] || null;
+  }
+
+  async function addCatalogNotification({ eventType, docKey, docTitle, message, actorEmail }) {
+    if (!hasDatabase()) {
+      return;
+    }
+
+    await query(
+      `
+      INSERT INTO catalog_notifications (event_type, doc_key, doc_title, message, actor_email)
+      VALUES ($1, $2, $3, $4, $5)
+      `,
+      [eventType, docKey, docTitle, message, actorEmail || null],
+    );
+  }
 
   function getClientIp(req) {
     return String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").slice(0, 120);
@@ -126,6 +206,24 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     return next();
   }
 
+  function requireAdmin(req, res, next) {
+    if (!req.authUser?.email) {
+      return res.status(401).json({
+        ok: false,
+        message: "Sesion requerida.",
+      });
+    }
+
+    if (String(req.authUser.email).toLowerCase() !== adminEmail) {
+      return res.status(403).json({
+        ok: false,
+        message: "Solo el administrador puede acceder.",
+      });
+    }
+
+    return next();
+  }
+
   async function askSiteGuide(question, history, language) {
     const modelCandidates = Array.from(
       new Set([
@@ -230,9 +328,22 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     throw wrapped;
   }
 
-  router.post("/search", (req, res) => {
-    const query = (req.body?.query || "").trim();
-    const results = searchDocuments(query);
+  router.post("/search", async (req, res) => {
+    const inputQuery = (req.body?.query || "").trim();
+    const catalog = await listCatalog();
+    const results = catalog
+      .map((doc) => ({
+        doc,
+        score: scoreCatalogEntry(inputQuery, doc),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map((entry) => ({
+        key: entry.doc.key,
+        title: entry.doc.title,
+        description: entry.doc.description,
+      }));
 
     return res.status(200).json({
       ok: true,
@@ -243,9 +354,22 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     });
   });
 
-  router.post("/voice-search", (req, res) => {
-    const query = (req.body?.query || "").trim();
-    const results = searchDocuments(query);
+  router.post("/voice-search", async (req, res) => {
+    const inputQuery = (req.body?.query || "").trim();
+    const catalog = await listCatalog();
+    const results = catalog
+      .map((doc) => ({
+        doc,
+        score: scoreCatalogEntry(inputQuery, doc),
+      }))
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map((entry) => ({
+        key: entry.doc.key,
+        title: entry.doc.title,
+        description: entry.doc.description,
+      }));
 
     return res.status(200).json({
       ok: true,
@@ -277,7 +401,8 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
         });
       }
 
-      if (!documents.some((doc) => doc.key === docKey)) {
+      const selectedDoc = await getCatalogDocumentByKey(docKey);
+      if (!selectedDoc) {
         return res.status(400).json({
           ok: false,
           message: "Documento no valido para el asistente.",
@@ -289,6 +414,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
         question,
         history,
         language,
+        docMeta: selectedDoc,
       });
 
       return res.status(200).json({
@@ -312,6 +438,39 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       ok: true,
       geminiConfigured: Boolean(assistantApiKey),
       model: geminiModel,
+    });
+  });
+
+  router.get("/catalog", async (req, res) => {
+    const catalog = await listCatalog();
+    return res.status(200).json({
+      ok: true,
+      documents: catalog,
+    });
+  });
+
+  router.get("/notifications", async (req, res) => {
+    if (!hasDatabase()) {
+      return res.status(200).json({
+        ok: true,
+        notifications: [],
+      });
+    }
+
+    const limit = Math.min(40, Math.max(1, Number(req.query?.limit || 12)));
+    const result = await query(
+      `
+      SELECT id, event_type, doc_key, doc_title, message, actor_email, created_at
+      FROM catalog_notifications
+      ORDER BY created_at DESC
+      LIMIT $1
+      `,
+      [limit],
+    );
+
+    return res.status(200).json({
+      ok: true,
+      notifications: result.rows,
     });
   });
 
@@ -354,6 +513,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       return res.status(200).json({
         ok: true,
         sessionToken,
+        admin: String(user.email || "").toLowerCase() === adminEmail,
         user: {
           email: user.email,
           fullName: user.full_name,
@@ -409,8 +569,136 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     return res.status(200).json({
       ok: true,
       user: req.authUser,
+      admin: String(req.authUser.email || "").toLowerCase() === adminEmail,
       likedBooks: likedBooksResult.rows,
       pageNotes: pageNotesResult.rows,
+    });
+  });
+
+  router.get("/admin/catalog", requireAuth, requireAdmin, async (req, res) => {
+    const catalog = await listCatalog();
+    return res.status(200).json({
+      ok: true,
+      documents: catalog,
+    });
+  });
+
+  router.post("/admin/catalog", requireAuth, requireAdmin, async (req, res) => {
+    if (!hasDatabase()) {
+      return res.status(503).json({
+        ok: false,
+        message: "Base de datos no configurada para admin.",
+      });
+    }
+
+    const docKey = String(req.body?.docKey || "").trim().toLowerCase();
+    const title = String(req.body?.title || "").trim();
+    const description = String(req.body?.description || "").trim();
+    const pdf = String(req.body?.pdf || "").trim();
+    const cover = String(req.body?.cover || "").trim();
+    const aliases = Array.isArray(req.body?.aliases)
+      ? req.body.aliases.map((value) => String(value || "").trim()).filter(Boolean)
+      : [];
+
+    if (!docKey || !title || !description || !pdf || !cover) {
+      return res.status(400).json({
+        ok: false,
+        message: "Debes completar docKey, titulo, descripcion, pdf y portada.",
+      });
+    }
+
+    await query(
+      `
+      INSERT INTO managed_documents (doc_key, title, description, cover, pdf, aliases, created_by_user_id, updated_by_user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $7)
+      ON CONFLICT (doc_key)
+      DO NOTHING
+      `,
+      [docKey, title, description, cover, pdf, aliases, req.authUser.id],
+    );
+
+    const inserted = await getCatalogDocumentByKey(docKey);
+    if (!inserted) {
+      return res.status(409).json({
+        ok: false,
+        message: "No se pudo crear el libro. Revisa si la clave ya existe.",
+      });
+    }
+
+    await addCatalogNotification({
+      eventType: "create",
+      docKey: inserted.key,
+      docTitle: inserted.title,
+      message: `Nuevo libro agregado: ${inserted.title}`,
+      actorEmail: req.authUser.email,
+    });
+
+    return res.status(201).json({
+      ok: true,
+      document: inserted,
+    });
+  });
+
+  router.put("/admin/catalog/:docKey", requireAuth, requireAdmin, async (req, res) => {
+    if (!hasDatabase()) {
+      return res.status(503).json({
+        ok: false,
+        message: "Base de datos no configurada para admin.",
+      });
+    }
+
+    const targetKey = String(req.params?.docKey || "").trim().toLowerCase();
+    const current = await getCatalogDocumentByKey(targetKey);
+    if (!current) {
+      return res.status(404).json({
+        ok: false,
+        message: "Libro no encontrado.",
+      });
+    }
+
+    const title = String(req.body?.title || current.title).trim();
+    const description = String(req.body?.description || current.description).trim();
+    const pdf = String(req.body?.pdf || current.pdf).trim();
+    const cover = String(req.body?.cover || current.cover).trim();
+    const aliases = Array.isArray(req.body?.aliases)
+      ? req.body.aliases.map((value) => String(value || "").trim()).filter(Boolean)
+      : current.aliases || [];
+
+    if (!title || !description || !pdf || !cover) {
+      return res.status(400).json({
+        ok: false,
+        message: "Titulo, descripcion, pdf y portada son obligatorios.",
+      });
+    }
+
+    await query(
+      `
+      UPDATE managed_documents
+      SET title = $2,
+          description = $3,
+          pdf = $4,
+          cover = $5,
+          aliases = $6,
+          updated_by_user_id = $7,
+          updated_at = NOW()
+      WHERE doc_key = $1
+      `,
+      [targetKey, title, description, pdf, cover, aliases, req.authUser.id],
+    );
+
+    const updated = await getCatalogDocumentByKey(targetKey);
+
+    await addCatalogNotification({
+      eventType: "update",
+      docKey: updated.key,
+      docTitle: updated.title,
+      message: `Libro actualizado: ${updated.title}`,
+      actorEmail: req.authUser.email,
+    });
+
+    return res.status(200).json({
+      ok: true,
+      document: updated,
     });
   });
 
@@ -419,7 +707,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     const docKey = String(req.body?.docKey || "").trim();
     const liked = req.body?.liked !== false;
 
-    const selectedDoc = docsByKey[docKey];
+    const selectedDoc = await getCatalogDocumentByKey(docKey);
     if (!selectedDoc) {
       return res.status(400).json({
         ok: false,
@@ -461,7 +749,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     const pageNumber = Number(req.body?.pageNumber || 0);
     const noteText = String(req.body?.note || "").trim();
 
-    const selectedDoc = docsByKey[docKey];
+    const selectedDoc = await getCatalogDocumentByKey(docKey);
     if (!selectedDoc) {
       return res.status(400).json({
         ok: false,

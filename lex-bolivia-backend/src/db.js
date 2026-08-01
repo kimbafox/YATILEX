@@ -1,7 +1,25 @@
 const crypto = require("crypto");
 const { Pool } = require("pg");
+const { documents: staticDocuments } = require("./config/documents");
 
-const connectionString = process.env.DATABASE_URL;
+function buildConnectionStringFromParts() {
+  const host = process.env.PGHOST || process.env.POSTGRES_HOST;
+  const port = process.env.PGPORT || process.env.POSTGRES_PORT || "5432";
+  const user = process.env.PGUSER || process.env.POSTGRES_USER;
+  const password = process.env.PGPASSWORD || process.env.POSTGRES_PASSWORD;
+  const database = process.env.PGDATABASE || process.env.POSTGRES_DB;
+
+  if (!host || !user || !password || !database) {
+    return "";
+  }
+
+  return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:${port}/${database}`;
+}
+
+const connectionString =
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_URL ||
+  buildConnectionStringFromParts();
 
 const pool = connectionString
   ? new Pool({
@@ -81,10 +99,56 @@ async function initDb() {
     );
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS managed_documents (
+      id BIGSERIAL PRIMARY KEY,
+      doc_key TEXT NOT NULL UNIQUE,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      cover TEXT NOT NULL,
+      pdf TEXT NOT NULL,
+      aliases TEXT[] NOT NULL DEFAULT '{}',
+      created_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+      updated_by_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS catalog_notifications (
+      id BIGSERIAL PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      doc_key TEXT NOT NULL,
+      doc_title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      actor_email TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
   await query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_user_id ON user_sessions(user_id);`);
   await query(`CREATE INDEX IF NOT EXISTS idx_user_sessions_expires ON user_sessions(expires_at);`);
   await query(`CREATE INDEX IF NOT EXISTS idx_user_liked_books_user ON user_liked_books(user_id);`);
   await query(`CREATE INDEX IF NOT EXISTS idx_user_page_notes_user_doc ON user_page_notes(user_id, doc_key);`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_managed_documents_doc_key ON managed_documents(doc_key);`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_catalog_notifications_created_at ON catalog_notifications(created_at DESC);`);
+
+  const existingCatalog = await query(`SELECT COUNT(*)::int AS total FROM managed_documents`);
+  const total = Number(existingCatalog.rows?.[0]?.total || 0);
+
+  if (total === 0) {
+    for (const doc of staticDocuments) {
+      await query(
+        `
+        INSERT INTO managed_documents (doc_key, title, description, cover, pdf, aliases)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (doc_key) DO NOTHING
+        `,
+        [doc.key, doc.title, doc.description || "", doc.cover || "", doc.pdf || "", doc.aliases || []],
+      );
+    }
+  }
 }
 
 function buildToken() {

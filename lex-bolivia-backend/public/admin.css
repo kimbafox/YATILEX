@@ -1,0 +1,181 @@
+:root {
+  --bg: #f3eadf;
+  --paper: #fffaf2;
+  --ink: #2d180c;
+  --muted: #816a56;
+  --line: #d9c2aa;
+  --accent: #7c2f00;
+  --accent-2: #9d4c13;
+  --danger: #8d1f1f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: radial-gradient(circle at 0% 0%, #fff7ee, var(--bg) 45%, #efe4d7 100%);
+  color: var(--ink);
+}
+
+.admin-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+}
+
+.admin-sidebar {
+  border-right: 1px solid var(--line);
+  background: #fff5e8;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  margin-bottom: 4px;
+}
+
+.brand img {
+  width: 45px;
+  height: 45px;
+}
+
+.brand-top {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.brand-bottom {
+  margin: 0;
+  font-weight: 700;
+}
+
+.side-btn {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  text-align: left;
+  background: #fff;
+  cursor: pointer;
+}
+
+.side-btn.is-active {
+  border-color: var(--accent-2);
+  background: #fff1de;
+}
+
+.side-footer {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.ghost-btn {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.ghost-btn.danger {
+  border-color: #d8aaaa;
+  color: var(--danger);
+}
+
+.admin-main {
+  padding: 20px;
+}
+
+.admin-head h1 {
+  margin: 0;
+}
+
+.admin-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.status {
+  min-height: 1.2em;
+  margin: 10px 0;
+  color: var(--accent);
+}
+
+.view-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--paper);
+}
+
+.view-card h2 {
+  margin-top: 0;
+}
+
+.admin-form {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.92rem;
+}
+
+.admin-form input,
+.admin-form textarea,
+.admin-form select {
+  border: 1px solid #c8af95;
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit;
+  background: #fff;
+}
+
+.primary-btn {
+  width: fit-content;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.catalog-list {
+  display: grid;
+  gap: 10px;
+}
+
+.catalog-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.catalog-item p {
+  margin: 4px 0;
+}
+
+@media (max-width: 900px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}

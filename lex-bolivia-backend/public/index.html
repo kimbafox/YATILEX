@@ -25,7 +25,7 @@
 
       <nav class="top-actions" aria-label="Accesos">
         <button id="library-btn" class="text-btn" type="button">Biblioteca</button>
-        <button class="icon-btn square-btn" type="button" aria-label="Notificaciones">
+        <button id="notif-btn" class="icon-btn square-btn" type="button" aria-label="Notificaciones">
           <img src="assets/notificacion.png" alt="" class="notif-icon" aria-hidden="true" />
         </button>
         <button id="visitor-btn" class="visitor-box" type="button" aria-label="Conectar cuenta profesional">
@@ -37,6 +37,14 @@
         </button>
       </nav>
     </header>
+
+    <section id="notif-panel" class="notif-panel" hidden aria-label="Notificaciones de catalogo">
+      <div class="notif-head">
+        <h3 id="notif-title">Actualizaciones</h3>
+        <button id="notif-close" class="assistant-close-btn" type="button" aria-label="Cerrar">X</button>
+      </div>
+      <div id="notif-list" class="notif-list"></div>
+    </section>
 
     <main class="hero">
       <section class="language-switch" aria-label="Idioma">
@@ -81,20 +89,6 @@
           aria-label="Sugerencias de documentos"
           hidden
         ></section>
-      </div>
-
-      <div class="assistant-cta-wrap">
-        <button
-          id="assistant-btn"
-          class="assistant-cta-btn"
-          type="button"
-          aria-label="Abrir asistente virtual"
-          title="Asistente virtual"
-        >
-          <img src="assets/logo.png" alt="" class="assistant-cta-logo" aria-hidden="true" />
-          <span class="sr-only">Asistente virtual</span>
-        </button>
-        <p class="assistant-cta-label">Asistente</p>
       </div>
 
       <p id="status" class="status" aria-live="polite">Listo para buscar.</p>

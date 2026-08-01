@@ -8,8 +8,8 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
   const pdfTextCache = new Map();
   const preferredModel = model || "gemini-1.5-flash-latest";
 
-  async function loadPdfTextByDocKey(docKey) {
-    const selectedDoc = documentByKey[docKey];
+  async function loadPdfTextByDocKey(docKey, docMeta) {
+    const selectedDoc = docMeta || documentByKey[docKey];
     if (!selectedDoc) {
       throw new Error("Documento no permitido.");
     }
@@ -250,13 +250,13 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
     return answer;
   }
 
-  async function askFromDocument({ docKey, question, history, language }) {
-    const selectedDoc = documentByKey[docKey];
+  async function askFromDocument({ docKey, question, history, language, docMeta }) {
+    const selectedDoc = docMeta || documentByKey[docKey];
     if (!selectedDoc) {
       throw new Error("Documento no valido para el asistente.");
     }
 
-    const pdfText = await loadPdfTextByDocKey(docKey);
+    const pdfText = await loadPdfTextByDocKey(docKey, selectedDoc);
     const context = extractRelevantContext(pdfText, question);
 
     if (!context) {

@@ -32,7 +32,8 @@ const query = (params.get("q") || "").trim();
 const openAssistant = params.get("assistant") === "1";
 const requestedPage = Math.max(1, Number(params.get("page") || 1));
 
-const selectedDoc = documents[docKey] || documents["constitucion-bolivia"];
+let activeDocKey = documents[docKey] ? docKey : "constitucion-bolivia";
+let selectedDoc = documents[activeDocKey];
 
 const backLink = document.getElementById("back-link");
 const docCover = document.getElementById("doc-cover");
@@ -306,9 +307,6 @@ function applyLanguage(language) {
   updateControls();
 }
 
-docCover.src = selectedDoc.cover;
-docCover.alt = `Portada de ${selectedDoc.title}`;
-docTitle.textContent = selectedDoc.title;
 applyLanguage(currentLanguage);
 setViewerStatus(t("viewerLoading"));
 
@@ -318,21 +316,7 @@ languageButtons.forEach((button) => {
   });
 });
 
-const encodedPdfPath = encodeURI(selectedDoc.pdf);
-const pdfUrl = encodedPdfPath;
-
-openNativeLink.href = query ? `${pdfUrl}#search=${encodeURIComponent(query)}` : pdfUrl;
-
-if (window.pdfjsLib) {
-  window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-  setupViewer(pdfUrl);
-} else {
-  setViewerStatus(t("viewerLoadFail"));
-}
-
-initAssistant();
-hydrateProfileActions();
+bootReader();
 
 prevPageBtn?.addEventListener("click", () => {
   if (!pdfDocument || currentPage <= 1) {
@@ -397,7 +381,7 @@ likeBookBtn?.addEventListener("click", async () => {
         Authorization: `Bearer ${sessionToken}`,
       },
       body: JSON.stringify({
-        docKey,
+        docKey: activeDocKey,
         liked: targetLiked,
       }),
     });
@@ -429,7 +413,7 @@ savePageNoteBtn?.addEventListener("click", async () => {
         Authorization: `Bearer ${sessionToken}`,
       },
       body: JSON.stringify({
-        docKey,
+        docKey: activeDocKey,
         pageNumber: currentPage,
         note: String(pageNoteInput?.value || "").trim(),
       }),
@@ -474,6 +458,65 @@ document.addEventListener("selectionchange", () => {
 
   copyCitationBtn.disabled = !(hasText && insideTextLayer);
 });
+
+async function bootReader() {
+  await hydrateSelectedDocFromCatalog();
+
+  docCover.src = selectedDoc.cover;
+  docCover.alt = `Portada de ${selectedDoc.title}`;
+  docTitle.textContent = selectedDoc.title;
+  applyLanguage(currentLanguage);
+
+  const encodedPdfPath = encodeURI(selectedDoc.pdf);
+  const pdfUrl = encodedPdfPath;
+
+  openNativeLink.href = query ? `${pdfUrl}#search=${encodeURIComponent(query)}` : pdfUrl;
+
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    setupViewer(pdfUrl);
+  } else {
+    setViewerStatus(t("viewerLoadFail"));
+  }
+
+  initAssistant();
+  hydrateProfileActions();
+}
+
+async function hydrateSelectedDocFromCatalog() {
+  try {
+    const response = await fetch("/api/catalog");
+    const data = await response.json();
+    if (!response.ok || !data?.ok || !Array.isArray(data.documents)) {
+      return;
+    }
+
+    const mapped = {};
+    data.documents.forEach((item) => {
+      if (!item?.key || !item?.pdf || !item?.cover || !item?.title) {
+        return;
+      }
+
+      mapped[item.key] = {
+        key: item.key,
+        title: item.title,
+        cover: item.cover,
+        pdf: item.pdf,
+      };
+    });
+
+    if (!Object.keys(mapped).length) {
+      return;
+    }
+
+    Object.assign(documents, mapped);
+    activeDocKey = mapped[docKey] ? docKey : (mapped[activeDocKey] ? activeDocKey : Object.keys(mapped)[0]);
+    selectedDoc = documents[activeDocKey] || selectedDoc;
+  } catch {
+    // Keep static defaults when API catalog is unavailable.
+  }
+}
 
 async function setupViewer(url) {
   try {
@@ -579,7 +622,7 @@ async function hydrateProfileActions() {
     }
 
     const likedBooks = Array.isArray(data.likedBooks) ? data.likedBooks : [];
-    isBookLiked = likedBooks.some((entry) => entry.doc_key === docKey);
+    isBookLiked = likedBooks.some((entry) => entry.doc_key === activeDocKey);
     if (likeBookBtn) {
       likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
     }
@@ -652,7 +695,7 @@ function initAssistant() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          docKey,
+          docKey: activeDocKey,
           question,
           history: assistantHistory,
           language: assistantLanguageLabel[currentLanguage] || "espanol",

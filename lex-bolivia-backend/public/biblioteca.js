@@ -9,6 +9,7 @@ const librarySubtitle = document.getElementById("library-subtitle");
 let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
 let sessionToken = localStorage.getItem("yatilex_session_token") || "";
 let likedDocKeys = new Set();
+let documents = [];
 
 const UI_TEXT = {
   es: {
@@ -85,7 +86,7 @@ function applyLanguage(language) {
   });
 }
 
-const documents = [
+const fallbackDocuments = [
   {
     key: "constitucion-bolivia",
     title: "Constitucion de Bolivia",
@@ -145,6 +146,7 @@ const documentDescriptions = {
 function getDocumentDescription(docKey) {
   const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
   return (
+    documents.find((doc) => doc.key === docKey)?.description ||
     documentDescriptions[lang]?.[docKey] ||
     documentDescriptions.es?.[docKey] ||
     ""
@@ -167,9 +169,32 @@ librarySearch?.addEventListener("input", () => {
 });
 
 applyLanguage(currentLanguage);
-hydrateLikedBooks().finally(() => {
-  renderLibrary("");
+hydrateCatalog().finally(() => {
+  hydrateLikedBooks().finally(() => {
+    renderLibrary("");
+  });
 });
+
+async function hydrateCatalog() {
+  documents = [...fallbackDocuments];
+
+  try {
+    const response = await fetch("/api/catalog");
+    const data = await response.json();
+    if (!response.ok || !data?.ok || !Array.isArray(data.documents)) {
+      return;
+    }
+
+    documents = data.documents.map((doc) => ({
+      key: doc.key,
+      title: doc.title,
+      cover: doc.cover,
+      description: doc.description,
+    }));
+  } catch {
+    // Keep fallback catalog when API is unavailable.
+  }
+}
 
 async function hydrateLikedBooks() {
   likedDocKeys = new Set();

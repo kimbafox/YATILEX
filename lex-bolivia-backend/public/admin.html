@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yatilex Admin</title>
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="admin-shell">
+      <aside class="admin-sidebar" aria-label="Navegacion admin">
+        <div class="brand">
+          <img src="assets/logo.png" alt="Logo Yatilex" />
+          <div>
+            <p class="brand-top">Yatilex</p>
+            <p class="brand-bottom">Panel Admin</p>
+          </div>
+        </div>
+
+        <button class="side-btn is-active" type="button" data-view="create">Agregar libro</button>
+        <button class="side-btn" type="button" data-view="edit">Editar libro</button>
+        <button class="side-btn" type="button" data-view="list">Catalogo</button>
+
+        <div class="side-footer">
+          <button id="go-index" class="ghost-btn" type="button">Ir al inicio</button>
+          <button id="logout-btn" class="ghost-btn danger" type="button">Cerrar sesion</button>
+        </div>
+      </aside>
+
+      <main class="admin-main">
+        <header class="admin-head">
+          <h1>Gestion de libros legales</h1>
+          <p id="admin-user">Validando permisos...</p>
+        </header>
+
+        <p id="status" class="status"></p>
+
+        <section id="view-create" class="view-card">
+          <h2>Agregar nuevo libro</h2>
+          <form id="create-form" class="admin-form">
+            <label>
+              Clave unica (docKey)
+              <input name="docKey" required placeholder="ej: codigo-familia-bolivia" />
+            </label>
+            <label>
+              Titulo
+              <input name="title" required placeholder="Titulo del documento" />
+            </label>
+            <label>
+              Descripcion
+              <textarea name="description" required rows="3" placeholder="Resumen corto para busquedas"></textarea>
+            </label>
+            <label>
+              Ruta PDF (obligatorio)
+              <input name="pdf" required placeholder="pdf/mi_documento.pdf" />
+            </label>
+            <label>
+              Ruta portada (obligatorio)
+              <input name="cover" required placeholder="assets/portadas/mi_portada.png" />
+            </label>
+            <label>
+              Alias (separados por coma)
+              <input name="aliases" placeholder="codigo familia, ley familia" />
+            </label>
+            <button type="submit" class="primary-btn">Crear libro</button>
+          </form>
+        </section>
+
+        <section id="view-edit" class="view-card" hidden>
+          <h2>Editar libro existente</h2>
+          <form id="edit-form" class="admin-form">
+            <label>
+              Seleccionar libro
+              <select id="edit-select" required></select>
+            </label>
+            <label>
+              Titulo
+              <input name="title" required />
+            </label>
+            <label>
+              Descripcion
+              <textarea name="description" required rows="3"></textarea>
+            </label>
+            <label>
+              Ruta PDF (obligatorio)
+              <input name="pdf" required />
+            </label>
+            <label>
+              Ruta portada (obligatorio)
+              <input name="cover" required />
+            </label>
+            <label>
+              Alias (separados por coma)
+              <input name="aliases" />
+            </label>
+            <button type="submit" class="primary-btn">Guardar cambios</button>
+          </form>
+        </section>
+
+        <section id="view-list" class="view-card" hidden>
+          <h2>Catalogo actual</h2>
+          <div id="catalog-list" class="catalog-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

@@ -20,6 +20,11 @@ const assistantCtaLabel = document.querySelector(".assistant-cta-label");
 const searchButtonLabel = document.querySelector(".search-btn span");
 const visitorBtn = document.getElementById("visitor-btn");
 const visitorText = document.getElementById("visitor-text");
+const notifBtn = document.getElementById("notif-btn");
+const notifPanel = document.getElementById("notif-panel");
+const notifClose = document.getElementById("notif-close");
+const notifList = document.getElementById("notif-list");
+const notifTitle = document.getElementById("notif-title");
 const recommendedTitle = document.getElementById("recommended-title");
 const authModal = document.getElementById("auth-modal");
 const authClose = document.getElementById("auth-close");
@@ -116,6 +121,8 @@ const UI_TEXT = {
     visitorLabel: "Visitante",
     visitorProLabel: "Profesional",
     recommendedLabel: "Recomendado",
+    notifTitle: "Actualizaciones",
+    notifEmpty: "Aun no hay notificaciones.",
     suggestionOpenPdf: "Abrir lector PDF",
     authTitle: "Conecta tu cuenta profesional",
     authSubtitle: "Inicia sesion con Google para guardar tus libros favoritos y paginas de interes.",
@@ -162,6 +169,8 @@ const UI_TEXT = {
     visitorLabel: "Watukuq",
     visitorProLabel: "Profesional",
     recommendedLabel: "Munasqa",
+    notifTitle: "Musuq willakuykuna",
+    notifEmpty: "Manaraq notificaciones kanchu.",
     suggestionOpenPdf: "PDF lector kichariy",
     authTitle: "Cuenta profesional nisqayki tinkichiy",
     authSubtitle: "Googlewan yaykuy, munasqa librokunata hinaspa interes paqinakunata waqaychanaykipaq.",
@@ -208,6 +217,8 @@ const UI_TEXT = {
     visitorLabel: "Uñt'iri",
     visitorProLabel: "Profesional",
     recommendedLabel: "Wakiskiri",
+    notifTitle: "Machaq yatiyawinaka",
+    notifEmpty: "Janiw notificaciones utjkiti.",
     suggestionOpenPdf: "PDF lector jist'araña",
     authTitle: "Cuenta profesional ukar mantaña",
     authSubtitle: "Google tuqiw mantaña, munat libronaka ukat interes paginanaka imañataki.",
@@ -289,6 +300,10 @@ function applyLanguage(language) {
     recommendedTitle.textContent = t("recommendedLabel");
   }
 
+  if (notifTitle) {
+    notifTitle.textContent = t("notifTitle");
+  }
+
   if (searchButtonLabel) {
     searchButtonLabel.textContent = t("searchBtn");
   }
@@ -316,10 +331,28 @@ if (libraryBtn) {
   });
 }
 
+notifBtn?.addEventListener("click", async () => {
+  if (!notifPanel) {
+    return;
+  }
+
+  const willOpen = notifPanel.hidden;
+  notifPanel.hidden = !willOpen;
+  if (willOpen) {
+    await loadNotifications();
+  }
+});
+
+notifClose?.addEventListener("click", () => {
+  if (notifPanel) {
+    notifPanel.hidden = true;
+  }
+});
+
 if (visitorBtn) {
   visitorBtn.addEventListener("click", () => {
     if (currentUser) {
-      window.location.href = "perfilpro.html";
+      window.location.href = currentUser.admin ? "admin.html" : "perfilpro.html";
       return;
     }
 
@@ -543,6 +576,9 @@ if (carouselTrack) {
 }
 
 applyLanguage(currentLanguage);
+hydrateCatalog().then(() => {
+  renderCarousel();
+});
 hydrateAuthState();
 
 input.addEventListener("input", () => {
@@ -581,6 +617,13 @@ document.addEventListener("click", (event) => {
   if (!event.target.closest(".search-zone")) {
     hideSuggestions();
   }
+
+  if (notifPanel && !notifPanel.hidden) {
+    const insideNotif = event.target.closest("#notif-panel") || event.target.closest("#notif-btn");
+    if (!insideNotif) {
+      notifPanel.hidden = true;
+    }
+  }
 });
 
 async function searchByVoice(query) {
@@ -590,6 +633,69 @@ async function searchByVoice(query) {
   }
 
   await search(query, "api/voice-search");
+}
+
+async function hydrateCatalog() {
+  try {
+    const response = await fetch("/api/catalog");
+    const data = await response.json();
+    if (!response.ok || !data?.ok || !Array.isArray(data.documents)) {
+      return;
+    }
+
+    documentCatalog.length = 0;
+    data.documents.forEach((doc) => {
+      documentCatalog.push({
+        key: doc.key,
+        title: doc.title,
+        cover: doc.cover,
+        pdf: doc.pdf,
+        aliases: Array.isArray(doc.aliases) ? doc.aliases : [],
+      });
+    });
+  } catch {
+    // Fallback to local catalog when API is unavailable.
+  }
+}
+
+async function loadNotifications() {
+  if (!notifList) {
+    return;
+  }
+
+  notifList.innerHTML = `<p class="status">${t("authLoading")}</p>`;
+
+  try {
+    const response = await fetch("/api/notifications?limit=20");
+    const data = await response.json();
+    const notifications = response.ok && data?.ok && Array.isArray(data.notifications)
+      ? data.notifications
+      : [];
+
+    notifList.innerHTML = "";
+    if (!notifications.length) {
+      notifList.innerHTML = `<p class="status">${t("notifEmpty")}</p>`;
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    notifications.forEach((item) => {
+      const card = document.createElement("article");
+      card.className = "notif-item";
+
+      const date = new Date(item.created_at || Date.now());
+      card.innerHTML = `
+        <p>${item.message || "Actualizacion de catalogo."}</p>
+        <p class="notif-meta">${item.doc_title || item.doc_key || "Documento"} · ${date.toLocaleString()}</p>
+      `;
+
+      fragment.appendChild(card);
+    });
+
+    notifList.appendChild(fragment);
+  } catch {
+    notifList.innerHTML = `<p class="status">${t("statusBackendError")}</p>`;
+  }
 }
 
 async function search(query, endpoint) {
@@ -908,6 +1014,7 @@ async function hydrateAuthState() {
     }
 
     currentUser = data.user;
+    currentUser.admin = Boolean(data.admin);
     localStorage.setItem("yatilex_user", JSON.stringify(currentUser));
   } catch {
     clearAuthState();
@@ -931,7 +1038,7 @@ function updateVisitorUi() {
   if (currentUser) {
     visitorBtn.classList.add("is-pro");
     visitorText.textContent = t("visitorProLabel");
-    visitorBtn.title = currentUser.email || "Perfil profesional";
+    visitorBtn.title = currentUser.admin ? "Panel admin" : (currentUser.email || "Perfil profesional");
   } else {
     visitorBtn.classList.remove("is-pro");
     visitorText.textContent = t("visitorLabel");
@@ -1030,6 +1137,7 @@ async function handleGoogleCredential(response) {
 
     sessionToken = data.sessionToken;
     currentUser = data.user;
+    currentUser.admin = Boolean(data.admin);
     localStorage.setItem("yatilex_session_token", sessionToken);
     localStorage.setItem("yatilex_user", JSON.stringify(currentUser));
     updateVisitorUi();
