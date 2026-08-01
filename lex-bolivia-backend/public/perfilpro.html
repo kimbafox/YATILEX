@@ -14,6 +14,9 @@
     <link rel="stylesheet" href="perfilpro.css" />
   </head>
   <body>
+    <div class="profile-orb orb-a" aria-hidden="true"></div>
+    <div class="profile-orb orb-b" aria-hidden="true"></div>
+
     <header class="profile-topbar">
       <a href="index.html" class="back-link">Volver</a>
       <div class="profile-user">
@@ -35,7 +38,13 @@
 
       <section class="profile-content">
         <article id="view-summary" class="panel-view">
-          <h2>Resumen de actividad</h2>
+          <div class="panel-head">
+            <div>
+              <p class="panel-kicker">Panel profesional</p>
+              <h2>Resumen de actividad</h2>
+            </div>
+            <p class="panel-copy">Tus favoritos, capturas y apuntes visuales listos para volver al documento exacto.</p>
+          </div>
           <div class="summary-grid">
             <div class="summary-card">
               <p>Libros favoritos</p>
@@ -49,12 +58,23 @@
         </article>
 
         <article id="view-likes" class="panel-view" hidden>
-          <h2>Libros favoritos</h2>
+          <div class="panel-head panel-head-tight">
+            <div>
+              <p class="panel-kicker">Biblioteca personal</p>
+              <h2>Libros favoritos</h2>
+            </div>
+          </div>
           <div id="likes-list" class="list-grid"></div>
         </article>
 
         <article id="view-notes" class="panel-view" hidden>
-          <h2>Paginas de interes</h2>
+          <div class="panel-head panel-head-tight">
+            <div>
+              <p class="panel-kicker">Apuntes visuales</p>
+              <h2>Paginas de interes</h2>
+            </div>
+            <p class="panel-copy">Cada guardado puede incluir la captura con tus subrayados para descargarla al instante.</p>
+          </div>
           <div id="notes-list" class="list-grid"></div>
         </article>
 

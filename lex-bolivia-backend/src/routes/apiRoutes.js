@@ -116,6 +116,48 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     return String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "").slice(0, 120);
   }
 
+  function sanitizeHighlightData(value) {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .slice(0, 120)
+      .map((stroke) => {
+        const boxes = Array.isArray(stroke?.boxes)
+          ? stroke.boxes
+            .slice(0, 80)
+            .map((box) => ({
+              left: clampUnit(box?.left),
+              top: clampUnit(box?.top),
+              width: clampUnit(box?.width),
+              height: clampUnit(box?.height),
+            }))
+            .filter((box) => box.width > 0 && box.height > 0)
+          : [];
+
+        return boxes.length ? { boxes } : null;
+      })
+      .filter(Boolean);
+  }
+
+  function clampUnit(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) {
+      return 0;
+    }
+
+    if (numeric <= 0) {
+      return 0;
+    }
+
+    if (numeric >= 1) {
+      return 1;
+    }
+
+    return Number(numeric.toFixed(5));
+  }
+
   async function upsertUserFromGoogle(googlePayload) {
     const sql = `
       INSERT INTO users (google_sub, email, full_name, avatar_url, role, last_login_at, updated_at)
@@ -570,7 +612,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
 
     const pageNotesResult = await query(
       `
-      SELECT doc_key, doc_title, page_number, note_text, updated_at
+      SELECT doc_key, doc_title, page_number, note_text, screenshot_data_url, highlight_data, updated_at
       FROM user_page_notes
       WHERE user_id = $1
       ORDER BY updated_at DESC
@@ -710,6 +752,8 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     const docKey = String(req.body?.docKey || "").trim();
     const pageNumber = Number(req.body?.pageNumber || 0);
     const noteText = String(req.body?.note || "").trim();
+    const screenshotDataUrl = String(req.body?.screenshot || "").trim();
+    const highlightData = sanitizeHighlightData(req.body?.highlights);
 
     const selectedDoc = await getCatalogDocumentByKey(docKey);
     if (!selectedDoc) {
@@ -726,16 +770,52 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       });
     }
 
+    if (
+      screenshotDataUrl &&
+      !/^data:image\/(png|jpeg|jpg);base64,/i.test(screenshotDataUrl)
+    ) {
+      return res.status(400).json({
+        ok: false,
+        message: "La captura de pagina no tiene un formato valido.",
+      });
+    }
+
+    if (screenshotDataUrl.length > 2500000) {
+      return res.status(413).json({
+        ok: false,
+        message: "La captura de pagina es demasiado grande.",
+      });
+    }
+
     await query(
       `
-      INSERT INTO user_page_notes (user_id, doc_key, doc_title, page_number, note_text, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW())
+      INSERT INTO user_page_notes (
+        user_id,
+        doc_key,
+        doc_title,
+        page_number,
+        note_text,
+        screenshot_data_url,
+        highlight_data,
+        updated_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, NOW())
       ON CONFLICT (user_id, doc_key, page_number)
       DO UPDATE SET
         note_text = EXCLUDED.note_text,
+        screenshot_data_url = EXCLUDED.screenshot_data_url,
+        highlight_data = EXCLUDED.highlight_data,
         updated_at = NOW()
       `,
-      [userId, docKey, selectedDoc.title, pageNumber, noteText || null],
+      [
+        userId,
+        docKey,
+        selectedDoc.title,
+        pageNumber,
+        noteText || null,
+        screenshotDataUrl || null,
+        JSON.stringify(highlightData),
+      ],
     );
 
     return res.status(200).json({

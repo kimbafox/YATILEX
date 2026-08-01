@@ -39,6 +39,7 @@ const searchZone = document.querySelector(".search-zone");
 const carouselTrack = document.getElementById("carousel-track");
 const carouselPrev = document.getElementById("carousel-prev");
 const carouselNext = document.getElementById("carousel-next");
+const introScreen = document.getElementById("intro-screen");
 
 const documentCatalog = [
   {
@@ -575,6 +576,8 @@ if (carouselTrack) {
   startCarouselAutoRotate();
 }
 
+startIntroAnimation();
+
 applyLanguage(currentLanguage);
 hydrateCatalog().then(() => {
   renderCarousel();
@@ -861,6 +864,7 @@ function renderCarousel() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `carousel-item ${position === 1 ? "is-center" : "is-side"}`;
+    button.style.animationDelay = `${position * 90}ms`;
     button.innerHTML = `
       <img src="${doc.cover}" alt="Portada de ${doc.title}" class="carousel-cover" />
       <p class="carousel-name">${doc.title}</p>
@@ -917,9 +921,10 @@ function renderResults(results) {
 
   const fragment = document.createDocumentFragment();
 
-  results.forEach((item) => {
+  results.forEach((item, index) => {
     const card = document.createElement("article");
     card.className = "result-card";
+    card.style.animationDelay = `${index * 70}ms`;
     card.innerHTML = `
       <h3>${item.title}</h3>
       <p>${item.description}</p>
@@ -951,6 +956,21 @@ function setVoiceState(state) {
   }
 
   searchZone.classList.remove("is-recognizing");
+}
+
+function startIntroAnimation() {
+  const reveal = () => {
+    document.body.classList.add("is-ready");
+
+    if (introScreen) {
+      window.setTimeout(() => {
+        introScreen.remove();
+      }, 900);
+    }
+  };
+
+  window.setTimeout(reveal, 160);
+  window.addEventListener("load", reveal, { once: true });
 }
 
 function safeStopRecognition() {

@@ -93,11 +93,16 @@ async function initDb() {
       doc_title TEXT NOT NULL,
       page_number INTEGER NOT NULL CHECK (page_number > 0),
       note_text TEXT,
+      screenshot_data_url TEXT,
+      highlight_data JSONB NOT NULL DEFAULT '[]'::jsonb,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (user_id, doc_key, page_number)
     );
   `);
+
+  await query(`ALTER TABLE user_page_notes ADD COLUMN IF NOT EXISTS screenshot_data_url TEXT;`);
+  await query(`ALTER TABLE user_page_notes ADD COLUMN IF NOT EXISTS highlight_data JSONB NOT NULL DEFAULT '[]'::jsonb;`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS managed_documents (

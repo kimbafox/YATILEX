@@ -48,8 +48,13 @@ const zoomInBtn = document.getElementById("zoom-in");
 const fitWidthBtn = document.getElementById("fit-width");
 const likeBookBtn = document.getElementById("like-book");
 const copyCitationBtn = document.getElementById("copy-citation");
+const markerToggleBtn = document.getElementById("marker-toggle");
+const undoHighlightBtn = document.getElementById("undo-highlight");
+const clearHighlightsBtn = document.getElementById("clear-highlights");
+const toolHint = document.getElementById("tool-hint");
 const pageNoteLabel = document.getElementById("page-note-label");
 const pageNoteInput = document.getElementById("page-note-input");
+const pageNoteHelper = document.getElementById("page-note-helper");
 const savePageNoteBtn = document.getElementById("save-page-note");
 const pageInfo = document.getElementById("page-info");
 const zoomInfo = document.getElementById("zoom-info");
@@ -58,6 +63,7 @@ const openNativeLink = document.getElementById("open-native");
 const pdfViewer = document.getElementById("pdf-viewer");
 const pdfStage = document.getElementById("pdf-stage");
 const canvas = document.getElementById("pdf-canvas");
+const highlightLayer = document.getElementById("pdf-highlight-layer");
 const textLayer = document.getElementById("pdf-text-layer");
 const canvasContext = canvas.getContext("2d");
 const assistantForm = document.getElementById("assistant-form");
@@ -66,6 +72,9 @@ const assistantSend = document.getElementById("assistant-send");
 const assistantMessages = document.getElementById("assistant-messages");
 const assistantPanelTitle = document.getElementById("assistant-panel-title");
 const assistantPanelSubtitle = document.getElementById("assistant-panel-subtitle");
+const saveToast = document.getElementById("save-toast");
+const saveToastTitle = document.getElementById("save-toast-title");
+const saveToastMessage = document.getElementById("save-toast-message");
 
 let pdfDocument = null;
 let currentPage = 1;
@@ -76,6 +85,11 @@ let currentPageExtractedText = "";
 let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
 let sessionToken = localStorage.getItem("yatilex_session_token") || "";
 let isBookLiked = false;
+let markerMode = false;
+let saveToastTimer = 0;
+
+const pageHighlights = new Map();
+const savedPageNotes = new Map();
 
 const UI_TEXT = {
   es: {
@@ -91,6 +105,7 @@ const UI_TEXT = {
     unlikeBook: "Quitar me gusta",
     noteLabel: "Nota para esta pagina (opcional)",
     notePlaceholder: "Escribe una nota o deja vacio",
+    noteHelper: "Al guardar se genera una captura con tus subrayados para descargarla desde tu perfil.",
     savePage: "Guardar pagina de interes",
     authRequired: "Debes conectar una cuenta profesional para usar esta opcion.",
     savePageOk: "Pagina de interes guardada en tu perfil.",
@@ -109,6 +124,20 @@ const UI_TEXT = {
     viewerCopyNeedSelect: "Selecciona texto para copiar una cita con pagina.",
     viewerCopyOk: "Cita con pagina copiada.",
     viewerCopyFail: "No se pudo copiar la cita.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": se detecto coincidencia de",
+    markerOff: "Marcador off",
+    markerOn: "Marcador on",
+    markerUndo: "Deshacer",
+    markerClear: "Limpiar",
+    markerHint: "Activa el marcador, subraya lo importante y luego guarda tu apunte con captura.",
+    markerSaved: "Subrayado agregado a la pagina.",
+    markerUndoOk: "Ultimo subrayado retirado.",
+    markerClearOk: "Se limpiaron los subrayados de esta pagina.",
+    markerNeedSelection: "Selecciona un fragmento del PDF para subrayarlo.",
+    saveToastTitle: "Apunte guardado",
+    saveToastMessage: "Tu captura con subrayado ya esta lista en tu perfil profesional.",
+    snapshotFail: "No se pudo generar la captura de la pagina.",
     assistantTitle: "Asistente del PDF",
     assistantSubtitle: "Responde solo con informacion del documento actual.",
     assistantInputPlaceholder: "Pregunta sobre este PDF...",
@@ -118,8 +147,6 @@ const UI_TEXT = {
     assistantNoAnswer: "No encuentro esa informacion en el documento.",
     assistantRetry: "No se pudo responder en este momento. Reintenta en unos segundos.",
     assistantConnError: "Error de conexion con el asistente. Verifica el despliegue e intenta de nuevo.",
-    highlightFoundPrefix: "Pagina",
-    highlightFoundMiddle: ": se detecto coincidencia de",
     citationPage: "Pagina",
     refArticle: "Articulo",
     refParagraph: "Paragrafo",
@@ -138,6 +165,7 @@ const UI_TEXT = {
     unlikeBook: "Munaqta qichuy",
     noteLabel: "Kay paqinapaq nota (munasqa)",
     notePlaceholder: "Nota qillqay utaq ch'usaq saqiy",
+    noteHelper: "Waqaychaspa huk captura ruwakun subrayadokunaykiwan, perfilmanta uraykachanaykipaq.",
     savePage: "Interes paqinata waqaychay",
     authRequired: "Kay opcionta apaykachanapaq cuenta profesionalwan tinkinayki tiyan.",
     savePageOk: "Interes paqina perfilniykipi waqaychasqa.",
@@ -156,6 +184,20 @@ const UI_TEXT = {
     viewerCopyNeedSelect: "P'anqayuq cita kachunapaq qillqata akllay.",
     viewerCopyOk: "P'anqayuq cita kachusqa.",
     viewerCopyFail: "Cita mana kachuy atikunchu.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": chaypi tarisqa",
+    markerOff: "Marcador off",
+    markerOn: "Marcador on",
+    markerUndo: "Qhipaman kutichiy",
+    markerClear: "Pichay",
+    markerHint: "Marcadorta churay, aswan wakin qillqata siq'iy hinaspa capturawan waqaychay.",
+    markerSaved: "Subrayado yapasqa.",
+    markerUndoOk: "Qhipa subrayado qichusqa.",
+    markerClearOk: "Kay paqinamanta subrayadokuna pichasqa.",
+    markerNeedSelection: "Subrayachinapaq PDF qillqata akllay.",
+    saveToastTitle: "Apunte guardado",
+    saveToastMessage: "Capturayki perfil profesionalpi listonña kachkan.",
+    snapshotFail: "Paqinapa capturanta mana ruway atikurqachu.",
     assistantTitle: "PDF Yanapaq",
     assistantSubtitle: "Kay documento nisqallanmanta willayta kutichin.",
     assistantInputPlaceholder: "Kay PDFmanta tapuy...",
@@ -165,8 +207,6 @@ const UI_TEXT = {
     assistantNoAnswer: "Mana kay documento ukhupi chay willayta tarinichu.",
     assistantRetry: "Kunanqa mana kutichiy atikunchu. Huk ratomanta yapamanta yachay.",
     assistantConnError: "Yanapaqwan mana conexion kanchu. Despliegue qhaway hinaspa yapamanta yachay.",
-    highlightFoundPrefix: "Pagina",
-    highlightFoundMiddle: ": chaypi tarisqa",
     citationPage: "Pagina",
     refArticle: "Articulo",
     refParagraph: "Paragrafo",
@@ -185,6 +225,7 @@ const UI_TEXT = {
     unlikeBook: "Me gusta apaqaña",
     noteLabel: "Aka paginataki nota (munata)",
     notePlaceholder: "Maya nota qillqt'am jan ukax ch'usaq jaytaña",
+    noteHelper: "Waqaychasax captura lurasi subrayadonakamampi, perfilat apsusma.",
     savePage: "Interes pagin imaña",
     authRequired: "Aka opción apnaqañatakix cuenta profesional mantañamawa.",
     savePageOk: "Interes paginax perfilaman imatawa.",
@@ -203,6 +244,20 @@ const UI_TEXT = {
     viewerCopyNeedSelect: "Pankani cita apaqañataki qillqata ajllim.",
     viewerCopyOk: "Pankani cita apaqatawa.",
     viewerCopyFail: "Cita apaqañax janiw atiskiti.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": aka chiqan jikxatasi",
+    markerOff: "Marcador off",
+    markerOn: "Marcador on",
+    markerUndo: "Qhipa apaqaña",
+    markerClear: "Pichaña",
+    markerHint: "Marcador apnaqam, wakiskiri qillqata subrayam ukat capturampi imañam.",
+    markerSaved: "Subrayado yapxatatawa.",
+    markerUndoOk: "Qhipa subrayado apsuta.",
+    markerClearOk: "Aka paginankir subrayadonakax pichatawa.",
+    markerNeedSelection: "Subrayañataki PDF qillqata ajllim.",
+    saveToastTitle: "Apunte guardado",
+    saveToastMessage: "Capturamax perfil profesionalan wakicht'atawa.",
+    snapshotFail: "Paginan capturap lurañax janiw atiskiti.",
     assistantTitle: "PDF Yanapiri",
     assistantSubtitle: "Aka documento yatiyawipakikiwa jaysi.",
     assistantInputPlaceholder: "Aka PDF tuqit jiskt'am...",
@@ -212,8 +267,6 @@ const UI_TEXT = {
     assistantNoAnswer: "Janiw uka yatiyawix aka documento taypin jikxataskiti.",
     assistantRetry: "Jichhax janiw jaysañ atiskiti. Mä juk'a qhipat mayampi yant'am.",
     assistantConnError: "Yanapirimpix janiw conexion utjkiti. Despliegue uñakipam ukat mayampi yant'am.",
-    highlightFoundPrefix: "Pagina",
-    highlightFoundMiddle: ": aka chiqan jikxatasi",
     citationPage: "Pagina",
     refArticle: "Articulo",
     refParagraph: "Paragrafo",
@@ -268,6 +321,22 @@ function applyLanguage(language) {
     likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
   }
 
+  if (markerToggleBtn) {
+    markerToggleBtn.textContent = markerMode ? t("markerOn") : t("markerOff");
+  }
+
+  if (undoHighlightBtn) {
+    undoHighlightBtn.textContent = t("markerUndo");
+  }
+
+  if (clearHighlightsBtn) {
+    clearHighlightsBtn.textContent = t("markerClear");
+  }
+
+  if (toolHint) {
+    toolHint.textContent = t("markerHint");
+  }
+
   if (pageNoteLabel) {
     pageNoteLabel.textContent = t("noteLabel");
   }
@@ -276,12 +345,24 @@ function applyLanguage(language) {
     pageNoteInput.placeholder = t("notePlaceholder");
   }
 
+  if (pageNoteHelper) {
+    pageNoteHelper.textContent = t("noteHelper");
+  }
+
   if (savePageNoteBtn) {
     savePageNoteBtn.textContent = t("savePage");
   }
 
   if (openNativeLink) {
     openNativeLink.textContent = t("openPdf");
+  }
+
+  if (saveToastTitle) {
+    saveToastTitle.textContent = t("saveToastTitle");
+  }
+
+  if (saveToastMessage) {
+    saveToastMessage.textContent = t("saveToastMessage");
   }
 
   if (assistantPanelTitle) {
@@ -316,8 +397,6 @@ languageButtons.forEach((button) => {
   });
 });
 
-bootReader();
-
 prevPageBtn?.addEventListener("click", () => {
   if (!pdfDocument || currentPage <= 1) {
     return;
@@ -349,6 +428,28 @@ zoomOutBtn?.addEventListener("click", () => {
 fitWidthBtn?.addEventListener("click", () => {
   fitPageToWidth();
   renderPage();
+});
+
+markerToggleBtn?.addEventListener("click", () => {
+  setMarkerMode(!markerMode);
+});
+
+undoHighlightBtn?.addEventListener("click", () => {
+  const strokes = getPageHighlights(currentPage);
+  if (!strokes.length) {
+    return;
+  }
+
+  strokes.pop();
+  pageHighlights.set(currentPage, strokes);
+  renderHighlightLayer();
+  setViewerStatus(t("markerUndoOk"));
+});
+
+clearHighlightsBtn?.addEventListener("click", () => {
+  pageHighlights.set(currentPage, []);
+  renderHighlightLayer();
+  setViewerStatus(t("markerClearOk"));
 });
 
 copyCitationBtn?.addEventListener("click", async () => {
@@ -406,6 +507,10 @@ savePageNoteBtn?.addEventListener("click", async () => {
   }
 
   try {
+    const screenshot = buildPageSnapshotDataUrl();
+    const note = String(pageNoteInput?.value || "").trim();
+    const highlights = serializePageHighlights(currentPage);
+
     const response = await fetch("/api/profile/page-notes", {
       method: "POST",
       headers: {
@@ -415,7 +520,9 @@ savePageNoteBtn?.addEventListener("click", async () => {
       body: JSON.stringify({
         docKey: activeDocKey,
         pageNumber: currentPage,
-        note: String(pageNoteInput?.value || "").trim(),
+        note,
+        screenshot,
+        highlights,
       }),
     });
 
@@ -424,9 +531,19 @@ savePageNoteBtn?.addEventListener("click", async () => {
       throw new Error(data?.message || "No se pudo guardar la pagina de interes.");
     }
 
+    savedPageNotes.set(currentPage, {
+      doc_key: activeDocKey,
+      doc_title: selectedDoc.title,
+      page_number: currentPage,
+      note_text: note,
+      screenshot_data_url: screenshot,
+      highlight_data: highlights,
+    });
+
     setViewerStatus(data.message || t("savePageOk"));
+    showSaveToast();
   } catch (error) {
-    setViewerStatus(error?.message || "No se pudo guardar la pagina de interes.");
+    setViewerStatus(error?.message || t("snapshotFail"));
   }
 });
 
@@ -437,6 +554,12 @@ window.addEventListener("resize", () => {
 
   fitPageToWidth();
   renderPage();
+});
+
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && markerMode) {
+    setMarkerMode(false);
+  }
 });
 
 document.addEventListener("selectionchange", () => {
@@ -458,6 +581,13 @@ document.addEventListener("selectionchange", () => {
 
   copyCitationBtn.disabled = !(hasText && insideTextLayer);
 });
+
+textLayer?.addEventListener("mouseup", handleHighlightSelection);
+textLayer?.addEventListener("touchend", () => {
+  window.setTimeout(handleHighlightSelection, 50);
+});
+
+bootReader();
 
 async function bootReader() {
   await hydrateSelectedDocFromCatalog();
@@ -527,7 +657,7 @@ async function setupViewer(url) {
     fitPageToWidth();
     await renderPage();
     setViewerStatus(`${t("viewerPdfLoadedPrefix")} ${pdfDocument.numPages} ${t("viewerPagesSuffix")}`);
-  } catch (error) {
+  } catch {
     setViewerStatus(t("viewerOpenFail"));
   }
 }
@@ -550,6 +680,11 @@ async function renderPage() {
       pdfStage.style.width = `${canvas.width}px`;
       pdfStage.style.height = `${canvas.height}px`;
     }
+    if (highlightLayer) {
+      highlightLayer.innerHTML = "";
+      highlightLayer.style.width = `${canvas.width}px`;
+      highlightLayer.style.height = `${canvas.height}px`;
+    }
     if (textLayer) {
       textLayer.innerHTML = "";
       textLayer.style.width = `${canvas.width}px`;
@@ -562,6 +697,8 @@ async function renderPage() {
     }).promise;
 
     await renderTextLayer(page, viewport);
+    syncCurrentPageSavedState();
+    renderHighlightLayer();
 
     updateControls();
     setViewerStatus(`${t("viewerPagePrefix")} ${currentPage} ${t("viewerOf")} ${pdfDocument.numPages}.`);
@@ -569,7 +706,7 @@ async function renderPage() {
     if (query) {
       highlightQueryHint(page);
     }
-  } catch (error) {
+  } catch {
     setViewerStatus(t("viewerRenderFail"));
   } finally {
     isRendering = false;
@@ -585,6 +722,7 @@ function updateControls() {
   nextPageBtn.disabled = currentPage >= pdfDocument.numPages;
   pageInfo.textContent = `${t("viewerPagePrefix")} ${currentPage} / ${pdfDocument.numPages}`;
   zoomInfo.textContent = `${Math.round(zoomScale * 100)}%`;
+  markerToggleBtn?.setAttribute("aria-pressed", String(markerMode));
 }
 
 function fitPageToWidth() {
@@ -592,7 +730,7 @@ function fitPageToWidth() {
     return;
   }
 
-  const containerWidth = Math.max(pdfViewer.clientWidth - 20, 280);
+  const containerWidth = Math.max(pdfViewer.clientWidth - 36, 280);
   const basePageWidth = 612;
   zoomScale = Math.min(Math.max(containerWidth / basePageWidth, 0.7), 1.7);
 }
@@ -622,12 +760,35 @@ async function hydrateProfileActions() {
     }
 
     const likedBooks = Array.isArray(data.likedBooks) ? data.likedBooks : [];
+    const pageNotes = Array.isArray(data.pageNotes) ? data.pageNotes : [];
     isBookLiked = likedBooks.some((entry) => entry.doc_key === activeDocKey);
+
+    pageNotes
+      .filter((entry) => entry.doc_key === activeDocKey)
+      .forEach((entry) => {
+        savedPageNotes.set(Number(entry.page_number), entry);
+      });
+
     if (likeBookBtn) {
       likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
     }
+
+    syncCurrentPageSavedState();
+    renderHighlightLayer();
   } catch {
     // keep local state if backend check fails
+  }
+}
+
+function syncCurrentPageSavedState() {
+  const savedEntry = savedPageNotes.get(currentPage);
+
+  if (pageNoteInput) {
+    pageNoteInput.value = savedEntry?.note_text || "";
+  }
+
+  if (!pageHighlights.has(currentPage) && Array.isArray(savedEntry?.highlight_data)) {
+    pageHighlights.set(currentPage, normalizeHighlightData(savedEntry.highlight_data));
   }
 }
 
@@ -639,9 +800,7 @@ async function renderTextLayer(page, viewport) {
   const textContent = await page.getTextContent();
   currentPageExtractedText = textContent.items.map((item) => item.str || "").join(" ").replace(/\s+/g, " ").trim();
 
-  const textItems = textContent.items;
-
-  textItems.forEach((item) => {
+  textContent.items.forEach((item) => {
     if (!item?.str) {
       return;
     }
@@ -659,11 +818,213 @@ async function renderTextLayer(page, viewport) {
     span.style.fontSize = `${fontHeight}px`;
     span.style.fontFamily = "sans-serif";
 
-    const scaleX = item.width > 0 ? (fontWidth / item.width) : 1;
+    const scaleX = item.width > 0 ? fontWidth / item.width : 1;
     span.style.transform = `rotate(${angle}rad) scaleX(${scaleX})`;
 
     textLayer.appendChild(span);
   });
+}
+
+function handleHighlightSelection() {
+  if (!markerMode) {
+    return;
+  }
+
+  const selection = window.getSelection();
+  const selectedText = (selection?.toString() || "").trim();
+  if (!selectedText || !selection?.rangeCount) {
+    setViewerStatus(t("markerNeedSelection"));
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const commonNode = range.commonAncestorContainer;
+  const container = commonNode.nodeType === Node.ELEMENT_NODE ? commonNode : commonNode.parentElement;
+  if (!container || !textLayer?.contains(container)) {
+    return;
+  }
+
+  const boxes = getNormalizedSelectionBoxes(range);
+  if (!boxes.length) {
+    return;
+  }
+
+  const strokes = getPageHighlights(currentPage);
+  strokes.push({ boxes });
+  pageHighlights.set(currentPage, strokes);
+  renderHighlightLayer();
+  clearTextSelection();
+  setViewerStatus(t("markerSaved"));
+}
+
+function getNormalizedSelectionBoxes(range) {
+  if (!pdfStage) {
+    return [];
+  }
+
+  const stageRect = pdfStage.getBoundingClientRect();
+  if (!stageRect.width || !stageRect.height) {
+    return [];
+  }
+
+  return Array.from(range.getClientRects())
+    .map((rect) => normalizeRect(rect, stageRect))
+    .filter(Boolean);
+}
+
+function normalizeRect(rect, stageRect) {
+  if (!rect.width || !rect.height) {
+    return null;
+  }
+
+  const left = clampUnit((rect.left - stageRect.left) / stageRect.width);
+  const top = clampUnit((rect.top - stageRect.top) / stageRect.height);
+  const width = clampUnit(rect.width / stageRect.width);
+  const height = clampUnit(rect.height / stageRect.height);
+
+  if (width < 0.002 || height < 0.002) {
+    return null;
+  }
+
+  return {
+    left,
+    top,
+    width: clampUnit(Math.min(width, 1 - left)),
+    height: clampUnit(Math.min(height, 1 - top)),
+  };
+}
+
+function clampUnit(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return 0;
+  }
+
+  if (numeric >= 1) {
+    return 1;
+  }
+
+  return Number(numeric.toFixed(5));
+}
+
+function normalizeHighlightData(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((stroke) => {
+      const boxes = Array.isArray(stroke?.boxes)
+        ? stroke.boxes
+          .map((box) => ({
+            left: clampUnit(box?.left),
+            top: clampUnit(box?.top),
+            width: clampUnit(box?.width),
+            height: clampUnit(box?.height),
+          }))
+          .filter((box) => box.width > 0 && box.height > 0)
+        : [];
+
+      return boxes.length ? { boxes } : null;
+    })
+    .filter(Boolean);
+}
+
+function getPageHighlights(pageNumber) {
+  return [...(pageHighlights.get(pageNumber) || [])];
+}
+
+function serializePageHighlights(pageNumber) {
+  return getPageHighlights(pageNumber).map((stroke) => ({
+    boxes: stroke.boxes.map((box) => ({
+      left: clampUnit(box.left),
+      top: clampUnit(box.top),
+      width: clampUnit(box.width),
+      height: clampUnit(box.height),
+    })),
+  }));
+}
+
+function renderHighlightLayer() {
+  if (!highlightLayer || !canvas.width || !canvas.height) {
+    return;
+  }
+
+  highlightLayer.innerHTML = "";
+  const strokes = getPageHighlights(currentPage);
+
+  strokes.forEach((stroke) => {
+    stroke.boxes.forEach((box) => {
+      const highlight = document.createElement("div");
+      highlight.className = "highlight-stroke";
+      highlight.style.left = `${box.left * canvas.width}px`;
+      highlight.style.top = `${box.top * canvas.height}px`;
+      highlight.style.width = `${box.width * canvas.width}px`;
+      highlight.style.height = `${box.height * canvas.height}px`;
+      highlightLayer.appendChild(highlight);
+    });
+  });
+}
+
+function setMarkerMode(enabled) {
+  markerMode = Boolean(enabled);
+  markerToggleBtn?.setAttribute("aria-pressed", String(markerMode));
+  if (markerToggleBtn) {
+    markerToggleBtn.textContent = markerMode ? t("markerOn") : t("markerOff");
+  }
+}
+
+function clearTextSelection() {
+  const selection = window.getSelection();
+  if (selection) {
+    selection.removeAllRanges();
+  }
+}
+
+function buildPageSnapshotDataUrl() {
+  if (!canvas.width || !canvas.height) {
+    throw new Error(t("snapshotFail"));
+  }
+
+  const snapshotCanvas = document.createElement("canvas");
+  snapshotCanvas.width = canvas.width;
+  snapshotCanvas.height = canvas.height;
+  const snapshotContext = snapshotCanvas.getContext("2d");
+
+  snapshotContext.fillStyle = "#ffffff";
+  snapshotContext.fillRect(0, 0, snapshotCanvas.width, snapshotCanvas.height);
+  snapshotContext.drawImage(canvas, 0, 0);
+  snapshotContext.fillStyle = "rgba(255, 224, 77, 0.38)";
+
+  serializePageHighlights(currentPage).forEach((stroke) => {
+    stroke.boxes.forEach((box) => {
+      snapshotContext.fillRect(
+        box.left * snapshotCanvas.width,
+        box.top * snapshotCanvas.height,
+        box.width * snapshotCanvas.width,
+        box.height * snapshotCanvas.height,
+      );
+    });
+  });
+
+  return snapshotCanvas.toDataURL("image/jpeg", 0.84);
+}
+
+function showSaveToast() {
+  if (!saveToast) {
+    return;
+  }
+
+  saveToastTitle.textContent = t("saveToastTitle");
+  saveToastMessage.textContent = t("saveToastMessage");
+  saveToast.classList.add("is-visible");
+  saveToast.setAttribute("aria-hidden", "false");
+
+  window.clearTimeout(saveToastTimer);
+  saveToastTimer = window.setTimeout(() => {
+    saveToast.classList.remove("is-visible");
+    saveToast.setAttribute("aria-hidden", "true");
+  }, 2600);
 }
 
 function initAssistant() {
@@ -671,10 +1032,7 @@ function initAssistant() {
     return;
   }
 
-  addAssistantMessage(
-    "assistant",
-    t("assistantIntro"),
-  );
+  addAssistantMessage("assistant", t("assistantIntro"));
 
   assistantForm.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -703,20 +1061,14 @@ function initAssistant() {
       });
 
       const data = await response.json();
-
       if (!response.ok || !data.ok) {
-        const message =
-          data?.message || t("assistantRetry");
-        addAssistantMessage("assistant", message);
+        addAssistantMessage("assistant", data?.message || t("assistantRetry"));
         return;
       }
 
       addAssistantMessage("assistant", data.answer || t("assistantNoAnswer"));
-    } catch (error) {
-      addAssistantMessage(
-        "assistant",
-        t("assistantConnError"),
-      );
+    } catch {
+      addAssistantMessage("assistant", t("assistantConnError"));
     } finally {
       setAssistantLoading(false);
     }
@@ -757,7 +1109,7 @@ async function highlightQueryHint(page) {
     if (target && allText.includes(target)) {
       setViewerStatus(`${t("highlightFoundPrefix")} ${currentPage}${t("highlightFoundMiddle")} "${query}".`);
     }
-  } catch (error) {
+  } catch {
     // Ignore text extraction issues for pages with complex fonts.
   }
 }
@@ -854,4 +1206,3 @@ function extractReferenceFromText(text) {
 
   return parts.join(", ");
 }
-

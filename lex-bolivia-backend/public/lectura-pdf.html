@@ -14,11 +14,17 @@
     <link rel="stylesheet" href="lectura.css" />
   </head>
   <body>
+    <div class="reader-orb orb-left" aria-hidden="true"></div>
+    <div class="reader-orb orb-right" aria-hidden="true"></div>
+
     <header class="reader-header">
       <a id="back-link" href="index.html" class="back-link">Volver al buscador</a>
       <div class="brand">
         <img src="assets/logo.png" alt="Logo de Yatilex" class="brand-logo" />
-        <h1>Yatilex</h1>
+        <div>
+          <p class="brand-kicker">Biblioteca juridica</p>
+          <h1>Yatilex</h1>
+        </div>
       </div>
     </header>
 
@@ -30,30 +36,67 @@
 
     <main class="reader-layout">
       <aside class="book-card">
-        <img id="doc-cover" src="assets/portadas/constitucion.png" alt="Portada" class="cover" />
-        <h2 id="doc-title">Documento legal</h2>
-        <p id="query-info">Lectura general</p>
+        <div class="book-card-cover-wrap">
+          <img id="doc-cover" src="assets/portadas/constitucion.png" alt="Portada" class="cover" />
+          <span class="book-card-badge">Lectura activa</span>
+        </div>
+
+        <div class="book-card-copy">
+          <p class="eyebrow">Documento actual</p>
+          <h2 id="doc-title">Documento legal</h2>
+          <p id="query-info">Lectura general</p>
+        </div>
+
+        <div class="book-metrics" aria-label="Resumen del documento">
+          <article class="metric-box">
+            <span class="metric-label">Modo</span>
+            <strong>Lectura y apuntes</strong>
+          </article>
+          <article class="metric-box">
+            <span class="metric-label">Guardado</span>
+            <strong>Captura incluida</strong>
+          </article>
+        </div>
+
+        <section class="reader-tip-card" aria-label="Consejos de uso">
+          <h3>Flujo recomendado</h3>
+          <p id="tool-hint">Activa el marcador, subraya lo importante y luego guarda tu apunte con captura.</p>
+        </section>
       </aside>
 
       <section class="pdf-panel">
-        <div class="panel-head">
-          <h3 id="panel-title">Documento PDF</h3>
+        <div class="panel-hero">
+          <div>
+            <p class="eyebrow">Visor profesional</p>
+            <h3 id="panel-title">Documento PDF</h3>
+          </div>
+          <div class="panel-badges" aria-label="Estado del lector">
+            <span id="page-info" class="panel-badge">Pagina 1 / 1</span>
+            <span id="zoom-info" class="panel-badge">100%</span>
+          </div>
         </div>
+
         <div class="viewer-toolbar" aria-label="Controles del PDF">
           <div class="tool-group" aria-label="Navegacion de paginas">
             <button id="prev-page" class="viewer-btn" type="button">Anterior</button>
-            <span id="page-info" class="page-info">Pagina 1 / 1</span>
             <button id="next-page" class="viewer-btn" type="button">Siguiente</button>
           </div>
 
           <div class="tool-group" aria-label="Zoom">
             <button id="zoom-out" class="viewer-btn" type="button">-</button>
-            <span id="zoom-info" class="page-info">100%</span>
             <button id="zoom-in" class="viewer-btn" type="button">+</button>
             <button id="fit-width" class="viewer-btn" type="button">Ajustar ancho</button>
           </div>
 
-          <div class="tool-group" aria-label="Herramientas de texto">
+          <div class="tool-group tool-group-accent" aria-label="Herramientas de texto">
+            <button id="marker-toggle" class="viewer-btn viewer-btn-accent" type="button" aria-pressed="false">
+              Marcador off
+            </button>
+            <button id="undo-highlight" class="viewer-btn" type="button">Deshacer</button>
+            <button id="clear-highlights" class="viewer-btn" type="button">Limpiar</button>
+          </div>
+
+          <div class="tool-group" aria-label="Acciones del documento">
             <button id="like-book" class="viewer-btn" type="button">Me gusta libro</button>
             <button id="copy-citation" class="viewer-btn" type="button" disabled>
               Copiar cita con pagina
@@ -65,16 +108,25 @@
         <div id="pdf-viewer" class="pdf-viewer" role="region" aria-label="Visor de PDF">
           <div id="pdf-stage" class="pdf-stage">
             <canvas id="pdf-canvas"></canvas>
+            <div id="pdf-highlight-layer" class="pdf-highlight-layer" aria-hidden="true"></div>
             <div id="pdf-text-layer" class="pdf-text-layer" aria-label="Texto seleccionable del PDF"></div>
           </div>
         </div>
         <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
 
         <section class="page-note-box" aria-label="Pagina de interes">
-          <label id="page-note-label" for="page-note-input">Nota para esta pagina (opcional)</label>
+          <div class="page-note-head">
+            <div>
+              <label id="page-note-label" for="page-note-input">Nota para esta pagina (opcional)</label>
+              <p id="page-note-helper" class="page-note-helper">
+                Al guardar se genera una captura con tus subrayados para descargarla desde tu perfil.
+              </p>
+            </div>
+            <span class="save-pill">Apunte visual</span>
+          </div>
           <div class="page-note-row">
             <input id="page-note-input" type="text" maxlength="350" placeholder="Escribe una nota o deja vacio" />
-            <button id="save-page-note" class="viewer-btn" type="button">Guardar pagina de interes</button>
+            <button id="save-page-note" class="viewer-link page-save-btn" type="button">Guardar pagina de interes</button>
           </div>
         </section>
 
@@ -100,6 +152,14 @@
         </section>
       </section>
     </main>
+
+    <div id="save-toast" class="save-toast" aria-live="polite" aria-hidden="true">
+      <div class="save-toast-glow" aria-hidden="true"></div>
+      <div class="save-toast-copy">
+        <strong id="save-toast-title">Apunte guardado</strong>
+        <p id="save-toast-message">Tu captura con subrayado ya esta lista en tu perfil profesional.</p>
+      </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="lectura-pdf.js" defer></script>
