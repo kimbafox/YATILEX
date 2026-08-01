@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const PORT = process.env.PORT || 4000;
-const frontendRoot = path.resolve(__dirname, "..", "lex-bolivia-frontend");
+const frontendRoot = resolveFrontendRoot();
 
 const mimeByExtension = {
   ".html": "text/html; charset=utf-8",
@@ -54,21 +54,22 @@ const server = http.createServer(async (req, res) => {
     const host = req.headers.host || "localhost";
     const requestUrl = new URL(req.url || "/", `http://${host}`);
     const { pathname } = requestUrl;
+    const method = req.method || "GET";
 
     setCorsHeaders(res);
 
-    if (req.method === "OPTIONS") {
+    if (method === "OPTIONS") {
       res.writeHead(204);
       res.end();
       return;
     }
 
-    if (req.method === "GET" && pathname === "/api/health") {
+    if ((method === "GET" || method === "HEAD") && pathname === "/api/health") {
       sendJson(res, 200, { ok: true, service: "yatilex-backend" });
       return;
     }
 
-    if (req.method === "POST" && (pathname === "/api/search" || pathname === "/api/voice-search")) {
+    if (method === "POST" && (pathname === "/api/search" || pathname === "/api/voice-search")) {
       const payload = await parseJsonBody(req);
       const query = (payload?.query || "").trim();
 
@@ -96,8 +97,20 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "GET") {
-      const staticServed = serveStaticFile(pathname, res);
+    if (pathname.startsWith("/api/")) {
+      sendJson(res, 404, { message: "Ruta API no encontrada" });
+      return;
+    }
+
+    if (method === "GET" || method === "HEAD") {
+      if (!frontendRoot) {
+        sendJson(res, 503, {
+          message: "Frontend no disponible en el despliegue",
+        });
+        return;
+      }
+
+      const staticServed = serveStaticFile(pathname, res, method);
       if (staticServed) {
         return;
       }
@@ -107,10 +120,15 @@ const server = http.createServer(async (req, res) => {
       if (fs.existsSync(indexPath)) {
         const html = fs.readFileSync(indexPath);
         res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-        res.end(html);
+        if (method === "HEAD") {
+          res.end();
+        } else {
+          res.end(html);
+        }
         return;
       }
 
+      sendJson(res, 404, { message: "index.html no encontrado" });
       return;
     }
 
@@ -136,7 +154,22 @@ function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
-function serveStaticFile(pathname, res) {
+function resolveFrontendRoot() {
+  const candidates = [
+    path.resolve(__dirname, "..", "lex-bolivia-frontend"),
+    path.resolve(process.cwd(), "lex-bolivia-frontend"),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, "index.html"))) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function serveStaticFile(pathname, res, method = "GET") {
   const safePathname = decodeURIComponent(pathname);
   const relativePath = safePathname === "/" ? "index.html" : safePathname.replace(/^\/+/, "");
   const requestedPath = path.resolve(frontendRoot, relativePath);
@@ -154,7 +187,11 @@ function serveStaticFile(pathname, res) {
   const content = fs.readFileSync(requestedPath);
 
   res.writeHead(200, { "Content-Type": mimeType });
-  res.end(content);
+  if (method === "HEAD") {
+    res.end();
+  } else {
+    res.end(content);
+  }
   return true;
 }
 
