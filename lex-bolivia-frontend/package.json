@@ -1,0 +1,15 @@
+{
+  "name": "lex-bolivia-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend estatico para Yatilex",
+  "scripts": {
+    "start": "serve -l tcp://0.0.0.0:$PORT ."
+  },
+  "dependencies": {
+    "serve": "^14.2.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
