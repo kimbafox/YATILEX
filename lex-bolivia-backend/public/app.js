@@ -11,6 +11,9 @@ const assistantBtn = document.getElementById("assistant-btn");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
+const searchZone = document.querySelector(".search-zone");
+const voiceIndicator = document.getElementById("voice-indicator");
+const voiceIndicatorText = document.getElementById("voice-indicator-text");
 const carouselTrack = document.getElementById("carousel-track");
 const carouselPrev = document.getElementById("carousel-prev");
 const carouselNext = document.getElementById("carousel-next");
@@ -75,10 +78,12 @@ if (recognition) {
   recognition.onstart = () => {
     isListening = true;
     micBtn.classList.add("listening");
+    setVoiceState("recording");
     setStatus("Escuchando... habla ahora.");
   };
 
   recognition.onresult = async (event) => {
+    setVoiceState("recognizing");
     const transcript = event.results[0][0].transcript.trim();
     input.value = transcript;
     await searchByVoice(transcript);
@@ -101,6 +106,7 @@ if (recognition) {
   recognition.onend = () => {
     isListening = false;
     micBtn.classList.remove("listening");
+    setVoiceState("idle");
   };
 } else {
   micBtn.disabled = true;
@@ -119,6 +125,7 @@ micBtn.addEventListener("click", () => {
 
   if (isListening) {
     recognition.stop();
+    setVoiceState("idle");
     return;
   }
 
@@ -421,4 +428,32 @@ function renderResults(results) {
   });
 
   resultsContainer.appendChild(fragment);
+}
+
+function setVoiceState(state) {
+  if (!voiceIndicator || !voiceIndicatorText || !searchZone) {
+    return;
+  }
+
+  if (state === "recording") {
+    voiceIndicator.hidden = false;
+    voiceIndicatorText.textContent = "Grabando voz...";
+    searchZone.classList.remove("is-recognizing");
+    return;
+  }
+
+  if (state === "recognizing") {
+    voiceIndicator.hidden = false;
+    voiceIndicatorText.textContent = "Reconociendo voz...";
+    searchZone.classList.add("is-recognizing");
+    setTimeout(() => {
+      if (!isListening) {
+        setVoiceState("idle");
+      }
+    }, 1400);
+    return;
+  }
+
+  voiceIndicator.hidden = true;
+  searchZone.classList.remove("is-recognizing");
 }

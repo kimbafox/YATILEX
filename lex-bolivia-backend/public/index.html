@@ -39,19 +39,6 @@
     </header>
 
     <main class="hero">
-      <div class="assistant-cta-wrap">
-        <button
-          id="assistant-btn"
-          class="assistant-cta-btn"
-          type="button"
-          aria-label="Abrir asistente virtual"
-          title="Asistente virtual"
-        >
-          <img src="assets/logo.png" alt="" class="assistant-cta-logo" aria-hidden="true" />
-          <span class="sr-only">Asistente virtual</span>
-        </button>
-      </div>
-
       <div class="search-zone">
         <form id="search-form" class="search-wrap" autocomplete="off">
         <label for="search-input" class="sr-only">Buscar</label>
@@ -88,6 +75,31 @@
           aria-label="Sugerencias de documentos"
           hidden
         ></section>
+
+        <div id="voice-indicator" class="voice-indicator" aria-live="polite" hidden>
+          <div class="voice-bars" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+          <p id="voice-indicator-text">Grabando voz...</p>
+        </div>
+      </div>
+
+      <div class="assistant-cta-wrap">
+        <button
+          id="assistant-btn"
+          class="assistant-cta-btn"
+          type="button"
+          aria-label="Abrir asistente virtual"
+          title="Asistente virtual"
+        >
+          <img src="assets/logo.png" alt="" class="assistant-cta-logo" aria-hidden="true" />
+          <span class="sr-only">Asistente virtual</span>
+        </button>
+        <p class="assistant-cta-label">Asistente</p>
       </div>
 
       <p id="status" class="status" aria-live="polite">Listo para buscar.</p>
