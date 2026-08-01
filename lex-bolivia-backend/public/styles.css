@@ -688,6 +688,10 @@ button {
   padding: 18px;
 }
 
+.auth-modal[hidden] {
+  display: none !important;
+}
+
 .auth-modal-card {
   width: min(560px, 100%);
   background: linear-gradient(180deg, #fff9f1 0%, #fff2e2 100%);

@@ -333,6 +333,18 @@ authClose?.addEventListener("click", () => {
   }
 });
 
+authModal?.addEventListener("click", (event) => {
+  if (event.target === authModal) {
+    authModal.hidden = true;
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && authModal && !authModal.hidden) {
+    authModal.hidden = true;
+  }
+});
+
 if (assistantBtn) {
   assistantBtn.addEventListener("click", () => {
     toggleSiteAssistant();
