@@ -76,8 +76,10 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, geminiApiKey }) {
       });
     } catch (error) {
       const message = error?.userMessage || "No se pudo procesar la consulta del asistente.";
+      const statusCode = Number(error?.statusCode || 500);
+      const safeStatus = statusCode >= 400 && statusCode < 600 ? statusCode : 500;
 
-      return res.status(500).json({
+      return res.status(safeStatus).json({
         ok: false,
         message,
       });

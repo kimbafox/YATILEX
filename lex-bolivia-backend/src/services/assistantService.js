@@ -6,7 +6,7 @@ const { normalizeText } = require("./searchService");
 
 function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
   const pdfTextCache = new Map();
-  const preferredModel = model || "gemini-2.0-flash";
+  const preferredModel = model || "gemini-1.5-flash-latest";
 
   async function loadPdfTextByDocKey(docKey) {
     const selectedDoc = documentByKey[docKey];
@@ -173,12 +173,14 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
       },
     };
 
-    const modelCandidates = [
-      preferredModel,
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-      "gemini-1.5-flash-latest",
-    ];
+    const modelCandidates = Array.from(
+      new Set([
+        preferredModel,
+        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash",
+        "gemini-2.0-flash",
+      ]),
+    );
     const versionCandidates = ["v1beta", "v1"];
 
     let data = null;
@@ -202,15 +204,26 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
 
     if (!data) {
       const safeError = new Error(lastError?.message || "Error desconocido en Gemini.");
+      const lastMessage = String(lastError?.message || "");
+      const statusCode = Number(lastError?.statusCode || 0);
 
-      if (String(lastError?.message || "").includes("API key not valid")) {
+      if (lastMessage.includes("API key not valid")) {
         safeError.userMessage = "La GEMINI_API_KEY es invalida o no tiene permisos activos.";
-      } else if (String(lastError?.message || "").toLowerCase().includes("permission")) {
+      } else if (statusCode === 403 || lastMessage.toLowerCase().includes("permission")) {
         safeError.userMessage = "La clave Gemini no tiene permiso para ese modelo.";
+      } else if (statusCode === 404 || lastMessage.toLowerCase().includes("not found")) {
+        safeError.userMessage = "El modelo Gemini configurado no esta disponible para tu clave.";
+      } else if (statusCode === 429 || lastMessage.toLowerCase().includes("quota")) {
+        safeError.userMessage = "Se alcanzo el limite de uso de Gemini. Revisa cuota/facturacion.";
       } else if (String(lastError?.name || "") === "AbortError") {
         safeError.userMessage = "Gemini tardo demasiado en responder. Intenta nuevamente.";
       } else {
-        safeError.userMessage = "Gemini no respondio correctamente. Revisa modelo/API key.";
+        const details = lastMessage.replace(/\s+/g, " ").slice(0, 180);
+        safeError.userMessage = `Gemini no respondio correctamente. Detalle: ${details}`;
+      }
+
+      if (statusCode >= 400 && statusCode < 600) {
+        safeError.statusCode = statusCode;
       }
 
       throw safeError;
