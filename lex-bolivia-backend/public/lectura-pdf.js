@@ -39,11 +39,16 @@ const openNativeLink = document.getElementById("open-native");
 const pdfViewer = document.getElementById("pdf-viewer");
 const canvas = document.getElementById("pdf-canvas");
 const canvasContext = canvas.getContext("2d");
+const assistantForm = document.getElementById("assistant-form");
+const assistantInput = document.getElementById("assistant-input");
+const assistantSend = document.getElementById("assistant-send");
+const assistantMessages = document.getElementById("assistant-messages");
 
 let pdfDocument = null;
 let currentPage = 1;
 let zoomScale = 1.1;
 let isRendering = false;
+let assistantHistory = [];
 
 docCover.src = selectedDoc.cover;
 docCover.alt = `Portada de ${selectedDoc.title}`;
@@ -70,6 +75,8 @@ if (window.pdfjsLib) {
 } else {
   setViewerStatus("No se pudo cargar el visor PDF. Reintenta la pagina.");
 }
+
+initAssistant();
 
 prevPageBtn?.addEventListener("click", () => {
   if (!pdfDocument || currentPage <= 1) {
@@ -183,6 +190,80 @@ function fitPageToWidth() {
 
 function setViewerStatus(message) {
   viewerStatus.textContent = message;
+}
+
+function initAssistant() {
+  if (!assistantMessages || !assistantForm || !assistantInput) {
+    return;
+  }
+
+  addAssistantMessage(
+    "assistant",
+    "Hola, soy tu asistente del documento. Solo respondo con informacion de este PDF.",
+  );
+
+  assistantForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const question = assistantInput.value.trim();
+
+    if (!question) {
+      return;
+    }
+
+    assistantInput.value = "";
+    addAssistantMessage("user", question);
+    setAssistantLoading(true);
+
+    try {
+      const response = await fetch("/api/assistant", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          docKey,
+          question,
+          history: assistantHistory,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        const message =
+          data?.message || "No se pudo responder en este momento. Reintenta en unos segundos.";
+        addAssistantMessage("assistant", message);
+        return;
+      }
+
+      addAssistantMessage("assistant", data.answer || "No encuentro esa informacion en el documento.");
+    } catch (error) {
+      addAssistantMessage(
+        "assistant",
+        "Error de conexion con el asistente. Verifica el despliegue e intenta de nuevo.",
+      );
+    } finally {
+      setAssistantLoading(false);
+    }
+  });
+}
+
+function addAssistantMessage(role, text) {
+  const message = document.createElement("article");
+  message.className = `assistant-msg ${role === "user" ? "is-user" : "is-assistant"}`;
+  message.textContent = text;
+  assistantMessages.appendChild(message);
+  assistantMessages.scrollTop = assistantMessages.scrollHeight;
+
+  const mappedRole = role === "assistant" ? "model" : "user";
+  assistantHistory.push({ role: mappedRole, text });
+  assistantHistory = assistantHistory.slice(-8);
+}
+
+function setAssistantLoading(isLoading) {
+  assistantInput.disabled = isLoading;
+  assistantSend.disabled = isLoading;
+  assistantSend.textContent = isLoading ? "Pensando..." : "Preguntar";
 }
 
 async function highlightQueryHint(page) {

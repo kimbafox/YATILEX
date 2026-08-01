@@ -47,6 +47,27 @@
           <canvas id="pdf-canvas"></canvas>
         </div>
         <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
+
+        <section class="assistant-panel" aria-label="Asistente virtual del documento">
+          <div class="assistant-head">
+            <h4>Asistente del PDF</h4>
+            <p>Responde solo con informacion del documento actual.</p>
+          </div>
+
+          <div id="assistant-messages" class="assistant-messages" aria-live="polite"></div>
+
+          <form id="assistant-form" class="assistant-form" autocomplete="off">
+            <label for="assistant-input" class="sr-only">Pregunta al asistente</label>
+            <input
+              id="assistant-input"
+              type="text"
+              placeholder="Pregunta sobre este PDF..."
+              required
+              maxlength="500"
+            />
+            <button id="assistant-send" class="viewer-link" type="submit">Preguntar</button>
+          </form>
+        </section>
       </section>
     </main>
 
