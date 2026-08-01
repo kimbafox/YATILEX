@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lectura PDF - Yatilex</title>
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="lectura.css" />
+  </head>
+  <body>
+    <header class="reader-header">
+      <a href="index.html" class="back-link">Volver al buscador</a>
+      <div class="brand">
+        <img src="assets/logo.png" alt="Logo de Yatilex" class="brand-logo" />
+        <h1>Yatilex</h1>
+      </div>
+    </header>
+
+    <main class="reader-layout">
+      <aside class="book-card">
+        <img id="doc-cover" src="assets/portadas/constitucion.png" alt="Portada" class="cover" />
+        <h2 id="doc-title">Documento legal</h2>
+        <p id="query-info">Lectura general</p>
+      </aside>
+
+      <section class="pdf-panel">
+        <h3 id="panel-title">Documento PDF</h3>
+        <p id="search-highlight" class="search-highlight">Sin clausula destacada.</p>
+        <iframe id="pdf-frame" title="Lector PDF"></iframe>
+      </section>
+    </main>
+
+    <script src="lectura-pdf.js" defer></script>
+  </body>
+</html>

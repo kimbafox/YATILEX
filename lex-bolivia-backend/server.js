@@ -5,9 +5,9 @@ const fs = require("fs");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const frontendCandidates = [
+  path.resolve(__dirname, "public"),
   path.resolve(__dirname, "..", "lex-bolivia-frontend"),
   path.resolve(__dirname, "lex-bolivia-frontend"),
-  path.resolve(__dirname, "public"),
 ];
 
 const FRONTEND_DIR = frontendCandidates.find((candidate) =>

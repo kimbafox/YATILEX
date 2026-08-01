@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yatilex</title>
+    <link rel="icon" type="image/png" href="assets/logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+
+    <header class="topbar">
+      <div class="brand">
+        <img src="assets/logo.png" alt="Logo de Yatilex" class="brand-logo" />
+        <h1>Yatilex</h1>
+      </div>
+
+      <nav class="top-actions" aria-label="Accesos">
+        <button class="text-btn" type="button">Biblioteca</button>
+        <button class="icon-btn square-btn" type="button" aria-label="Notificaciones">
+          <img src="assets/notificacion.png" alt="" class="notif-icon" aria-hidden="true" />
+        </button>
+        <div class="visitor-box" aria-label="Usuario visitante">
+          <div class="avatar" aria-hidden="true">
+            <span class="head"></span>
+            <span class="body"></span>
+          </div>
+          <span class="visitor-text">Visitante</span>
+        </div>
+      </nav>
+    </header>
+
+    <main class="hero">
+      <div class="search-zone">
+        <form id="search-form" class="search-wrap" autocomplete="off">
+        <label for="search-input" class="sr-only">Buscar</label>
+        <img
+          src="assets/icono_busqueda_2.png"
+          alt=""
+          class="search-input-icon"
+          aria-hidden="true"
+        />
+        <input
+          id="search-input"
+          name="query"
+          type="text"
+          placeholder="Buscar en Yatilex..."
+          required
+        />
+        <button
+          id="mic-btn"
+          class="icon-btn square-btn mic-btn"
+          type="button"
+          aria-label="Buscar por voz"
+        >
+          <img src="assets/microfono.png" alt="" class="mic-asset-icon" aria-hidden="true" />
+        </button>
+        <button class="search-btn" type="submit">
+          <img src="assets/icono_busqueda_2.png" alt="" class="search-btn-icon" aria-hidden="true" />
+          <span>Buscar</span>
+        </button>
+        </form>
+
+        <section
+          id="suggestions"
+          class="suggestions"
+          aria-label="Sugerencias de documentos"
+          hidden
+        ></section>
+      </div>
+
+      <p id="status" class="status" aria-live="polite">Listo para buscar.</p>
+      <section id="results" class="results" aria-label="Resultados de busqueda"></section>
+
+      <section class="recommended" aria-label="Documentos recomendados">
+        <h2>Recomendado</h2>
+        <div class="carousel" id="recommended-carousel">
+          <button class="carousel-nav" id="carousel-prev" type="button" aria-label="Anterior">‹</button>
+          <div class="carousel-track" id="carousel-track"></div>
+          <button class="carousel-nav" id="carousel-next" type="button" aria-label="Siguiente">›</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
