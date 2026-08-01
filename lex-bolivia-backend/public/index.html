@@ -94,24 +94,18 @@
       <p id="status" class="status" aria-live="polite">Listo para buscar.</p>
       <section id="results" class="results" aria-label="Resultados de busqueda"></section>
 
-      <section class="recommended" aria-label="Documentos recomendados">
-        <h2>Recomendado</h2>
-        <div class="carousel" id="recommended-carousel">
-          <button class="carousel-nav" id="carousel-prev" type="button" aria-label="Anterior">‹</button>
-          <div class="carousel-track" id="carousel-track"></div>
-          <button class="carousel-nav" id="carousel-next" type="button" aria-label="Siguiente">›</button>
-        </div>
-      </section>
-
       <section id="site-assistant" class="site-assistant" hidden aria-label="Asistente del sitio">
         <div class="site-assistant-head">
-          <h3>Asistente Yatilex</h3>
+          <div class="site-assistant-title-wrap">
+            <img src="assets/logo.png" alt="" class="site-assistant-head-logo" aria-hidden="true" />
+            <h3>Asistente Yatilex</h3>
+          </div>
           <div class="site-assistant-actions">
             <button id="assistant-voice-toggle" class="assistant-mini-btn" type="button" aria-pressed="false">
               Voz off
             </button>
-            <button id="assistant-close" class="assistant-mini-btn" type="button" aria-label="Cerrar asistente">
-              Cerrar
+            <button id="assistant-close" class="assistant-close-btn" type="button" aria-label="Cerrar asistente">
+              X
             </button>
           </div>
         </div>
@@ -129,6 +123,15 @@
           />
           <button id="site-assistant-send" class="search-btn" type="submit">Enviar</button>
         </form>
+      </section>
+
+      <section class="recommended" aria-label="Documentos recomendados">
+        <h2>Recomendado</h2>
+        <div class="carousel" id="recommended-carousel">
+          <button class="carousel-nav" id="carousel-prev" type="button" aria-label="Anterior">‹</button>
+          <div class="carousel-track" id="carousel-track"></div>
+          <button class="carousel-nav" id="carousel-next" type="button" aria-label="Siguiente">›</button>
+        </div>
       </section>
     </main>
 

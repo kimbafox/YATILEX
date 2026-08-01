@@ -90,6 +90,10 @@ assistantCloseBtn?.addEventListener("click", () => {
     return;
   }
 
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
   siteAssistant.hidden = true;
 });
 
@@ -626,7 +630,24 @@ function addSiteAssistantMessage(role, text) {
 
   const message = document.createElement("article");
   message.className = `site-assistant-msg ${role === "user" ? "is-user" : "is-assistant"}`;
-  message.textContent = text;
+
+  const avatar = document.createElement("img");
+  avatar.className = `chat-avatar ${role === "user" ? "user-avatar" : "assistant-avatar"}`;
+  avatar.src = "assets/logo.png";
+  avatar.alt = role === "user" ? "Perfil de usuario" : "Perfil del asistente";
+
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble";
+  bubble.textContent = text;
+
+  if (role === "user") {
+    message.appendChild(bubble);
+    message.appendChild(avatar);
+  } else {
+    message.appendChild(avatar);
+    message.appendChild(bubble);
+  }
+
   siteAssistantMessages.appendChild(message);
   siteAssistantMessages.scrollTop = siteAssistantMessages.scrollHeight;
 
