@@ -1,7 +1,25 @@
 const http = require("http");
 const { URL } = require("url");
+const fs = require("fs");
+const path = require("path");
 
 const PORT = process.env.PORT || 4000;
+const frontendRoot = path.resolve(__dirname, "..", "lex-bolivia-frontend");
+
+const mimeByExtension = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".pdf": "application/pdf",
+};
 
 const libraryItems = [
   {
@@ -45,15 +63,6 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
-    if (req.method === "GET" && pathname === "/") {
-      sendJson(res, 200, {
-        ok: true,
-        service: "yatilex-backend",
-        message: "Servidor activo",
-      });
-      return;
-    }
-
     if (req.method === "GET" && pathname === "/api/health") {
       sendJson(res, 200, { ok: true, service: "yatilex-backend" });
       return;
@@ -87,6 +96,24 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    if (req.method === "GET") {
+      const staticServed = serveStaticFile(pathname, res);
+      if (staticServed) {
+        return;
+      }
+
+      // Single-page fallback for direct navigation to non-file routes.
+      const indexPath = path.join(frontendRoot, "index.html");
+      if (fs.existsSync(indexPath)) {
+        const html = fs.readFileSync(indexPath);
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end(html);
+        return;
+      }
+
+      return;
+    }
+
     sendJson(res, 404, { message: "Ruta no encontrada" });
   } catch (_error) {
     setCorsHeaders(res);
@@ -107,6 +134,28 @@ function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+function serveStaticFile(pathname, res) {
+  const safePathname = decodeURIComponent(pathname);
+  const relativePath = safePathname === "/" ? "index.html" : safePathname.replace(/^\/+/, "");
+  const requestedPath = path.resolve(frontendRoot, relativePath);
+
+  if (!requestedPath.startsWith(frontendRoot)) {
+    return false;
+  }
+
+  if (!fs.existsSync(requestedPath) || fs.statSync(requestedPath).isDirectory()) {
+    return false;
+  }
+
+  const extension = path.extname(requestedPath).toLowerCase();
+  const mimeType = mimeByExtension[extension] || "application/octet-stream";
+  const content = fs.readFileSync(requestedPath);
+
+  res.writeHead(200, { "Content-Type": mimeType });
+  res.end(content);
+  return true;
 }
 
 function sendJson(res, statusCode, payload) {
@@ -139,7 +188,7 @@ function parseJsonBody(req) {
 
 if (require.main === module) {
   server.listen(PORT, () => {
-    console.log(`Yatilex backend escuchando en http://localhost:${PORT}`);
+    console.log(`Yatilex backend escuchando en http://0.0.0.0:${PORT}`);
   });
 }
 

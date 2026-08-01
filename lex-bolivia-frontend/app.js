@@ -1,7 +1,7 @@
 const API_BASE_URL =
   window.YATILEX_API_URL ||
   localStorage.getItem("yatilex_api_url") ||
-  "http://localhost:4000";
+  "";
 
 const form = document.getElementById("search-form");
 const input = document.getElementById("search-input");
