@@ -35,21 +35,21 @@ Aplicacion: Yandex
 ** Se encarga de configurar CORS, configura el servidor para que pueda entender datos enviados en formato JSON, conecta la ruta base /api con todas las rutas definidas en el archivo de rutas y tiene una ruta /health que sirve como un "latido" para comprobar que el servidor esta vivo y funcionando.
 
 * carpeta src/routes/apiRoutes.js: Crea el enrutador principal del sistema.
-** createApiRouter: Inicializa el enrutador y los servicios.
-** /assistant/site-guide: Tiene una logica interna (askSiteGuide) que crea un "prompt" (instruccion) especifico para Gemini, diciendole que actue solo como un guia de uso de la plataforma web, asegurandose de que responda en espanol simple y no de consejos legales.
-** /search y /voice-search: Reciben la palabra que el usuario escribio o dicto, se la pasan al servicio de busqueda y devuelven el resultado en JSON.
-** /assistant: Verifica primero si existe la clave API de Google Gemini (GEMINI_API_KEY). Si existe, recibe la pregunta del usuario y el nombre del documento, y le pasa ese trabajo pesado al assistantService. Tambien captura cualquier error y devuelve mensajes amigables al usuario (por ejemplo, un error 503 si falta la clave).
+* createApiRouter: Inicializa el enrutador y los servicios.
+* /assistant/site-guide: Tiene una logica interna (askSiteGuide) que crea un "prompt" (instruccion) especifico para Gemini, diciendole que actue solo como un guia de uso de la plataforma web, asegurandose de que responda en espanol simple y no de consejos legales.
+* /search y /voice-search: Reciben la palabra que el usuario escribio o dicto, se la pasan al servicio de busqueda y devuelven el resultado en JSON.
+* /assistant: Verifica primero si existe la clave API de Google Gemini (GEMINI_API_KEY). Si existe, recibe la pregunta del usuario y el nombre del documento, y le pasa ese trabajo pesado al assistantService. Tambien captura cualquier error y devuelve mensajes amigables al usuario (por ejemplo, un error 503 si falta la clave).
 
 * carpeta src/services/: Contiene la logica de negocio y el procesamiento pesado de datos.
 * funcion normalizeText: toma cualquier texto, lo pasa a minusculas y le quita caracteres especiales para que la busqueda sea exacta.
 * funcion searchDocuments: revisa la lista de documentos, compara la busqueda del usuario con el titulo y los alias de cada archivo, y suma puntos (score). Si hay coincidencias, devuelve los 6 mejores resultados ordenados de mayor a menor puntuacion.
 * src/services/assistantService.js: Es el archivo mas complejo. Gestiona la comunicacion con Google Gemini y la lectura de PDFs.
-** loadPdfTextByDocKey: Usa la libreria externa pdf-parse para abrir fisicamente el archivo PDF de la ley y extraer todo su texto puro. Para no hacer esto cada vez que alguien pregunta, guarda el texto en una memoria temporal (cache).
-** extractRelevantContext: Esta funcion busca palabras clave de la pregunta del usuario dentro del texto del PDF y extrae solo los parrafos mas relevantes (hasta un maximo de caracteres). Asi, solo le envia a Gemini la parte de la ley que importa.
-** askGeminiWithContext: Arma un "paquete" (payload JSON) con instrucciones muy estrictas: le dice a Gemini que es el asistente de Yatilex, le entrega el contexto extraido del PDF, y le da la pregunta del usuario. Le prohibe inventar informacion.
-** callGeminiEndpoint: Hace la conexion HTTP real a los servidores de Google Generative Language usando fetch. Tiene mecanismos de seguridad, como un "AbortController", para cancelar la peticion si Google tarda mas de 25 segundos en responder.
+* loadPdfTextByDocKey: Usa la libreria externa pdf-parse para abrir fisicamente el archivo PDF de la ley y extraer todo su texto puro. Para no hacer esto cada vez que alguien pregunta, guarda el texto en una memoria temporal (cache).
+* extractRelevantContext: Esta funcion busca palabras clave de la pregunta del usuario dentro del texto del PDF y extrae solo los parrafos mas relevantes (hasta un maximo de caracteres). Asi, solo le envia a Gemini la parte de la ley que importa.
+* askGeminiWithContext: Arma un "paquete" (payload JSON) con instrucciones muy estrictas: le dice a Gemini que es el asistente de Yatilex, le entrega el contexto extraido del PDF, y le da la pregunta del usuario. Le prohibe inventar informacion.
+* callGeminiEndpoint: Hace la conexion HTTP real a los servidores de Google Generative Language usando fetch. Tiene mecanismos de seguridad, como un "AbortController", para cancelar la peticion si Google tarda mas de 25 segundos en responder.
 * src/config/: Guarda variables estaticas o configuraciones globales.
-** src/config/documents.js: Simula una BD estatica de documentos.Es una lista (array) que contiene los identificadores (key), titulos, pequenas descripciones y las rutas fisicas donde estan guardados los archivos PDF reales. Todo el backend consulta este archivo para saber que documentos existen.
+* src/config/documents.js: Simula una BD estatica de documentos.Es una lista (array) que contiene los identificadores (key), titulos, pequenas descripciones y las rutas fisicas donde estan guardados los archivos PDF reales. Todo el backend consulta este archivo para saber que documentos existen.
 
 # Catalogo de Documentos Actual
 * Constitución de Bolivia.  
