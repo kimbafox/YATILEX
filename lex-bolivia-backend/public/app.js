@@ -38,6 +38,20 @@ const documentCatalog = [
     pdf: "pdf/codigo penal_bolivia.pdf",
     aliases: ["codigo penal", "penal bolivia"],
   },
+  {
+    key: "codigo-procesal-civil-bolivia",
+    title: "Codigo Procesal Civil de Bolivia",
+    cover: "assets/portadas/codigo_procesal.png",
+    pdf: "pdf/ley-439-nuevo-codigo-procesal-civil.pdf",
+    aliases: ["codigo procesal", "procesal civil", "ley 439", "codigo procesal civil"],
+  },
+  {
+    key: "ley-general-del-trabajo-bolivia",
+    title: "Ley General del Trabajo de Bolivia",
+    cover: "assets/portadas/ley_general_del_trabajo.png",
+    pdf: "pdf/Ley general del trabajo del 8 de diciembre de 1942.pdf",
+    aliases: ["ley general del trabajo", "trabajo bolivia", "norma laboral"],
+  },
 ];
 
 let activeSuggestionIndex = -1;

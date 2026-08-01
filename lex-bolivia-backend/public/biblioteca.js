@@ -22,6 +22,18 @@ const documents = [
     cover: "assets/portadas/codigo_penal.png",
     description: "Tipificacion de delitos y penas vigentes en Bolivia.",
   },
+  {
+    key: "codigo-procesal-civil-bolivia",
+    title: "Codigo Procesal Civil de Bolivia",
+    cover: "assets/portadas/codigo_procesal.png",
+    description: "Ley 439 del nuevo Codigo Procesal Civil en Bolivia.",
+  },
+  {
+    key: "ley-general-del-trabajo-bolivia",
+    title: "Ley General del Trabajo de Bolivia",
+    cover: "assets/portadas/ley_general_del_trabajo.png",
+    description: "Marco normativo base sobre relaciones laborales en Bolivia.",
+  },
 ];
 
 backHomeBtn?.addEventListener("click", () => {

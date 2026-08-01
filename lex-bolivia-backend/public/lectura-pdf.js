@@ -14,6 +14,16 @@ const documents = {
     cover: "assets/portadas/codigo_penal.png",
     pdf: "pdf/codigo penal_bolivia.pdf",
   },
+  "codigo-procesal-civil-bolivia": {
+    title: "Codigo Procesal Civil de Bolivia",
+    cover: "assets/portadas/codigo_procesal.png",
+    pdf: "pdf/ley-439-nuevo-codigo-procesal-civil.pdf",
+  },
+  "ley-general-del-trabajo-bolivia": {
+    title: "Ley General del Trabajo de Bolivia",
+    cover: "assets/portadas/ley_general_del_trabajo.png",
+    pdf: "pdf/Ley general del trabajo del 8 de diciembre de 1942.pdf",
+  },
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -33,9 +43,7 @@ const nextPageBtn = document.getElementById("next-page");
 const zoomOutBtn = document.getElementById("zoom-out");
 const zoomInBtn = document.getElementById("zoom-in");
 const fitWidthBtn = document.getElementById("fit-width");
-const copySelectionBtn = document.getElementById("copy-selection");
 const copyCitationBtn = document.getElementById("copy-citation");
-const copyPageTextBtn = document.getElementById("copy-page-text");
 const pageInfo = document.getElementById("page-info");
 const zoomInfo = document.getElementById("zoom-info");
 const viewerStatus = document.getElementById("viewer-status");
@@ -142,16 +150,6 @@ copyCitationBtn?.addEventListener("click", async () => {
   const citation = buildCitation(selected, legalRef);
   const copied = await copyToClipboard(citation);
   setViewerStatus(copied ? "Cita con pagina copiada." : "No se pudo copiar la cita.");
-});
-
-copyPageTextBtn?.addEventListener("click", async () => {
-  if (!currentPageExtractedText) {
-    setViewerStatus("No hay texto detectable en esta pagina.");
-    return;
-  }
-
-  const copied = await copyToClipboard(currentPageExtractedText);
-  setViewerStatus(copied ? "Texto de la pagina copiado." : "No se pudo copiar el texto de la pagina.");
 });
 
 window.addEventListener("resize", () => {

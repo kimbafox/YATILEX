@@ -20,6 +20,20 @@ const documents = [
     aliases: ["codigo penal", "penal bolivia"],
     pdf: "pdf/codigo penal_bolivia.pdf",
   },
+  {
+    key: "codigo-procesal-civil-bolivia",
+    title: "Codigo Procesal Civil de Bolivia",
+    description: "Ley 439 sobre el nuevo Codigo Procesal Civil de Bolivia.",
+    aliases: ["codigo procesal", "procesal civil", "ley 439", "codigo procesal civil"],
+    pdf: "pdf/ley-439-nuevo-codigo-procesal-civil.pdf",
+  },
+  {
+    key: "ley-general-del-trabajo-bolivia",
+    title: "Ley General del Trabajo de Bolivia",
+    description: "Norma laboral fundamental de Bolivia (1942).",
+    aliases: ["ley general del trabajo", "trabajo bolivia", "norma laboral"],
+    pdf: "pdf/Ley general del trabajo del 8 de diciembre de 1942.pdf",
+  },
 ];
 
 const documentByKey = documents.reduce((acc, doc) => {
