@@ -1,13 +1,11 @@
 {
-  "name": "lex-bolivia-frontend",
+  "name": "lex-bolivia-backend",
   "version": "1.0.0",
   "private": true,
-  "description": "Frontend estatico para Yatilex",
+  "description": "API backend para Yatilex",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js"
-  },
-  "dependencies": {
-    "serve": "^14.2.4"
   },
   "engines": {
     "node": ">=18"
