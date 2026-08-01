@@ -12,7 +12,6 @@ const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
 const searchZone = document.querySelector(".search-zone");
-const voiceIndicator = document.getElementById("voice-indicator");
 const carouselTrack = document.getElementById("carousel-track");
 const carouselPrev = document.getElementById("carousel-prev");
 const carouselNext = document.getElementById("carousel-next");
@@ -474,18 +473,16 @@ function renderResults(results) {
 }
 
 function setVoiceState(state) {
-  if (!voiceIndicator || !searchZone) {
+  if (!searchZone) {
     return;
   }
 
   if (state === "recording") {
-    voiceIndicator.hidden = false;
     searchZone.classList.remove("is-recognizing");
     return;
   }
 
   if (state === "recognizing") {
-    voiceIndicator.hidden = false;
     searchZone.classList.add("is-recognizing");
     setTimeout(() => {
       if (micState !== "listening") {
@@ -495,7 +492,6 @@ function setVoiceState(state) {
     return;
   }
 
-  voiceIndicator.hidden = true;
   searchZone.classList.remove("is-recognizing");
 }
 
