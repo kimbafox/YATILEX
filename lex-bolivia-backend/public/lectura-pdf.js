@@ -33,10 +33,12 @@ const openAssistant = params.get("assistant") === "1";
 
 const selectedDoc = documents[docKey] || documents["constitucion-bolivia"];
 
+const backLink = document.getElementById("back-link");
 const docCover = document.getElementById("doc-cover");
 const docTitle = document.getElementById("doc-title");
 const panelTitle = document.getElementById("panel-title");
 const queryInfo = document.getElementById("query-info");
+const languageButtons = document.querySelectorAll(".lang-chip");
 const prevPageBtn = document.getElementById("prev-page");
 const nextPageBtn = document.getElementById("next-page");
 const zoomOutBtn = document.getElementById("zoom-out");
@@ -56,6 +58,8 @@ const assistantForm = document.getElementById("assistant-form");
 const assistantInput = document.getElementById("assistant-input");
 const assistantSend = document.getElementById("assistant-send");
 const assistantMessages = document.getElementById("assistant-messages");
+const assistantPanelTitle = document.getElementById("assistant-panel-title");
+const assistantPanelSubtitle = document.getElementById("assistant-panel-subtitle");
 
 let pdfDocument = null;
 let currentPage = 1;
@@ -63,17 +67,206 @@ let zoomScale = 1.1;
 let isRendering = false;
 let assistantHistory = [];
 let currentPageExtractedText = "";
+let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+
+const UI_TEXT = {
+  es: {
+    backToSearch: "Volver al buscador",
+    panelTitlePrefix: "PDF:",
+    queryFound: "Clausula buscada:",
+    generalReading: "Lectura general",
+    prev: "Anterior",
+    next: "Siguiente",
+    fitWidth: "Ajustar ancho",
+    copyCitation: "Copiar cita con pagina",
+    openPdf: "Abrir PDF",
+    viewerLoading: "Cargando documento...",
+    viewerLoadFail: "No se pudo cargar el visor PDF. Reintenta la pagina.",
+    viewerPdfLoadedPrefix: "PDF cargado.",
+    viewerPagesSuffix: "pagina(s).",
+    viewerOpenFail: "No se pudo abrir el PDF. Verifica el archivo.",
+    viewerRenderingPrefix: "Renderizando pagina",
+    viewerPagePrefix: "Pagina",
+    viewerOf: "de",
+    viewerRenderFail: "No se pudo renderizar esta pagina.",
+    viewerCopyNeedSelect: "Selecciona texto para copiar una cita con pagina.",
+    viewerCopyOk: "Cita con pagina copiada.",
+    viewerCopyFail: "No se pudo copiar la cita.",
+    assistantTitle: "Asistente del PDF",
+    assistantSubtitle: "Responde solo con informacion del documento actual.",
+    assistantInputPlaceholder: "Pregunta sobre este PDF...",
+    assistantAsk: "Preguntar",
+    assistantThinking: "Pensando...",
+    assistantIntro: "Hola, soy tu asistente del documento. Solo respondo con informacion de este PDF.",
+    assistantNoAnswer: "No encuentro esa informacion en el documento.",
+    assistantRetry: "No se pudo responder en este momento. Reintenta en unos segundos.",
+    assistantConnError: "Error de conexion con el asistente. Verifica el despliegue e intenta de nuevo.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": se detecto coincidencia de",
+    citationPage: "Pagina",
+    refArticle: "Articulo",
+    refParagraph: "Paragrafo",
+    refInciso: "Inciso",
+  },
+  qu: {
+    backToSearch: "Maskaqman kutiy",
+    panelTitlePrefix: "PDF:",
+    queryFound: "Maskasqa clausula:",
+    generalReading: "Ñawinchay general",
+    prev: "Ñawpaq",
+    next: "Qhipa",
+    fitWidth: "Anchu tupachiy",
+    copyCitation: "P'anqayuq cita kachuy",
+    openPdf: "PDF kichariy",
+    viewerLoading: "Documento cargachkan...",
+    viewerLoadFail: "PDF visor mana cargakunchu. Yapamanta yachay.",
+    viewerPdfLoadedPrefix: "PDF cargado.",
+    viewerPagesSuffix: "pagina(s).",
+    viewerOpenFail: "PDF mana kicharikunchu. Archivo qhaway.",
+    viewerRenderingPrefix: "Paqina ruwachkan",
+    viewerPagePrefix: "Pagina",
+    viewerOf: "de",
+    viewerRenderFail: "Kay paqinata mana ruwarikunchu.",
+    viewerCopyNeedSelect: "P'anqayuq cita kachunapaq qillqata akllay.",
+    viewerCopyOk: "P'anqayuq cita kachusqa.",
+    viewerCopyFail: "Cita mana kachuy atikunchu.",
+    assistantTitle: "PDF Yanapaq",
+    assistantSubtitle: "Kay documento nisqallanmanta willayta kutichin.",
+    assistantInputPlaceholder: "Kay PDFmanta tapuy...",
+    assistantAsk: "Tapuy",
+    assistantThinking: "Yuyaychkan...",
+    assistantIntro: "Napaykuy, kay documentoq yanapaqmi kani. Kay PDF nisqallamanta kutichini.",
+    assistantNoAnswer: "Mana kay documento ukhupi chay willayta tarinichu.",
+    assistantRetry: "Kunanqa mana kutichiy atikunchu. Huk ratomanta yapamanta yachay.",
+    assistantConnError: "Yanapaqwan mana conexion kanchu. Despliegue qhaway hinaspa yapamanta yachay.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": chaypi tarisqa",
+    citationPage: "Pagina",
+    refArticle: "Articulo",
+    refParagraph: "Paragrafo",
+    refInciso: "Inciso",
+  },
+  ay: {
+    backToSearch: "Thaqhirir kutt'aña",
+    panelTitlePrefix: "PDF:",
+    queryFound: "Thaqhata clausula:",
+    generalReading: "Ñawinchawi general",
+    prev: "Nayra",
+    next: "Qhipa",
+    fitWidth: "Anchu askichaña",
+    copyCitation: "Pankani cita apaqaña",
+    openPdf: "PDF jist'araña",
+    viewerLoading: "Documento cargaskiwa...",
+    viewerLoadFail: "PDF visor janiw cargaskiti. Mayampi yant'am.",
+    viewerPdfLoadedPrefix: "PDF cargado.",
+    viewerPagesSuffix: "pagina(s).",
+    viewerOpenFail: "PDF janiw jist'arakiti. Archivo uñakipam.",
+    viewerRenderingPrefix: "Paginax lurasiskiwa",
+    viewerPagePrefix: "Pagina",
+    viewerOf: "de",
+    viewerRenderFail: "Aka paginax janiw lurasiskaspati.",
+    viewerCopyNeedSelect: "Pankani cita apaqañataki qillqata ajllim.",
+    viewerCopyOk: "Pankani cita apaqatawa.",
+    viewerCopyFail: "Cita apaqañax janiw atiskiti.",
+    assistantTitle: "PDF Yanapiri",
+    assistantSubtitle: "Aka documento yatiyawipakikiwa jaysi.",
+    assistantInputPlaceholder: "Aka PDF tuqit jiskt'am...",
+    assistantAsk: "Jiskt'aña",
+    assistantThinking: "Amuyt'askiwa...",
+    assistantIntro: "Kamisaki, nayax documento yanapiriwa. Aka PDF yatiyawipatak jaysarakïma.",
+    assistantNoAnswer: "Janiw uka yatiyawix aka documento taypin jikxataskiti.",
+    assistantRetry: "Jichhax janiw jaysañ atiskiti. Mä juk'a qhipat mayampi yant'am.",
+    assistantConnError: "Yanapirimpix janiw conexion utjkiti. Despliegue uñakipam ukat mayampi yant'am.",
+    highlightFoundPrefix: "Pagina",
+    highlightFoundMiddle: ": aka chiqan jikxatasi",
+    citationPage: "Pagina",
+    refArticle: "Articulo",
+    refParagraph: "Paragrafo",
+    refInciso: "Inciso",
+  },
+};
+
+const assistantLanguageLabel = {
+  es: "espanol",
+  qu: "quechua",
+  ay: "aymara",
+};
+
+function t(key) {
+  const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
+  return UI_TEXT[lang][key] ?? UI_TEXT.es[key] ?? "";
+}
+
+function applyLanguage(language) {
+  currentLanguage = UI_TEXT[language] ? language : "es";
+  localStorage.setItem("yatilex_lang", currentLanguage);
+
+  if (backLink) {
+    backLink.textContent = t("backToSearch");
+  }
+
+  if (panelTitle) {
+    panelTitle.textContent = `${t("panelTitlePrefix")} ${selectedDoc.title}`;
+  }
+
+  if (queryInfo) {
+    queryInfo.textContent = query ? `${t("queryFound")} ${query}` : t("generalReading");
+  }
+
+  if (prevPageBtn) {
+    prevPageBtn.textContent = t("prev");
+  }
+
+  if (nextPageBtn) {
+    nextPageBtn.textContent = t("next");
+  }
+
+  if (fitWidthBtn) {
+    fitWidthBtn.textContent = t("fitWidth");
+  }
+
+  if (copyCitationBtn) {
+    copyCitationBtn.textContent = t("copyCitation");
+  }
+
+  if (openNativeLink) {
+    openNativeLink.textContent = t("openPdf");
+  }
+
+  if (assistantPanelTitle) {
+    assistantPanelTitle.textContent = t("assistantTitle");
+  }
+
+  if (assistantPanelSubtitle) {
+    assistantPanelSubtitle.textContent = t("assistantSubtitle");
+  }
+
+  if (assistantInput) {
+    assistantInput.placeholder = t("assistantInputPlaceholder");
+  }
+
+  if (assistantSend && !assistantSend.disabled) {
+    assistantSend.textContent = t("assistantAsk");
+  }
+
+  languageButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === currentLanguage));
+  });
+
+  updateControls();
+}
 
 docCover.src = selectedDoc.cover;
 docCover.alt = `Portada de ${selectedDoc.title}`;
 docTitle.textContent = selectedDoc.title;
-panelTitle.textContent = `PDF: ${selectedDoc.title}`;
+applyLanguage(currentLanguage);
+setViewerStatus(t("viewerLoading"));
 
-if (query) {
-  queryInfo.textContent = `Clausula buscada: ${query}`;
-} else {
-  queryInfo.textContent = "Lectura general";
-}
+languageButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    applyLanguage(button.dataset.lang || "es");
+  });
+});
 
 const encodedPdfPath = encodeURI(selectedDoc.pdf);
 const pdfUrl = encodedPdfPath;
@@ -85,7 +278,7 @@ if (window.pdfjsLib) {
     "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   setupViewer(pdfUrl);
 } else {
-  setViewerStatus("No se pudo cargar el visor PDF. Reintenta la pagina.");
+  setViewerStatus(t("viewerLoadFail"));
 }
 
 initAssistant();
@@ -123,30 +316,18 @@ fitWidthBtn?.addEventListener("click", () => {
   renderPage();
 });
 
-copySelectionBtn?.addEventListener("click", async () => {
-  const selected = (window.getSelection()?.toString() || "").trim();
-
-  if (!selected) {
-    setViewerStatus("Selecciona texto en el PDF para copiar.");
-    return;
-  }
-
-  const copied = await copyToClipboard(selected);
-  setViewerStatus(copied ? "Texto seleccionado copiado." : "No se pudo copiar la seleccion.");
-});
-
 copyCitationBtn?.addEventListener("click", async () => {
   const selected = (window.getSelection()?.toString() || "").trim();
 
   if (!selected) {
-    setViewerStatus("Selecciona texto para copiar una cita con pagina.");
+    setViewerStatus(t("viewerCopyNeedSelect"));
     return;
   }
 
   const legalRef = detectLegalReference(selected, currentPageExtractedText);
   const citation = buildCitation(selected, legalRef);
   const copied = await copyToClipboard(citation);
-  setViewerStatus(copied ? "Cita con pagina copiada." : "No se pudo copiar la cita.");
+  setViewerStatus(copied ? t("viewerCopyOk") : t("viewerCopyFail"));
 });
 
 window.addEventListener("resize", () => {
@@ -186,9 +367,9 @@ async function setupViewer(url) {
 
     fitPageToWidth();
     await renderPage();
-    setViewerStatus(`PDF cargado. ${pdfDocument.numPages} pagina(s).`);
+    setViewerStatus(`${t("viewerPdfLoadedPrefix")} ${pdfDocument.numPages} ${t("viewerPagesSuffix")}`);
   } catch (error) {
-    setViewerStatus("No se pudo abrir el PDF. Verifica el archivo.");
+    setViewerStatus(t("viewerOpenFail"));
   }
 }
 
@@ -198,7 +379,7 @@ async function renderPage() {
   }
 
   isRendering = true;
-  setViewerStatus(`Renderizando pagina ${currentPage}...`);
+  setViewerStatus(`${t("viewerRenderingPrefix")} ${currentPage}...`);
 
   try {
     const page = await pdfDocument.getPage(currentPage);
@@ -224,13 +405,13 @@ async function renderPage() {
     await renderTextLayer(page, viewport);
 
     updateControls();
-    setViewerStatus(`Pagina ${currentPage} de ${pdfDocument.numPages}.`);
+    setViewerStatus(`${t("viewerPagePrefix")} ${currentPage} ${t("viewerOf")} ${pdfDocument.numPages}.`);
 
     if (query) {
       highlightQueryHint(page);
     }
   } catch (error) {
-    setViewerStatus("No se pudo renderizar esta pagina.");
+    setViewerStatus(t("viewerRenderFail"));
   } finally {
     isRendering = false;
   }
@@ -243,7 +424,7 @@ function updateControls() {
 
   prevPageBtn.disabled = currentPage <= 1;
   nextPageBtn.disabled = currentPage >= pdfDocument.numPages;
-  pageInfo.textContent = `Pagina ${currentPage} / ${pdfDocument.numPages}`;
+  pageInfo.textContent = `${t("viewerPagePrefix")} ${currentPage} / ${pdfDocument.numPages}`;
   zoomInfo.textContent = `${Math.round(zoomScale * 100)}%`;
 }
 
@@ -303,7 +484,7 @@ function initAssistant() {
 
   addAssistantMessage(
     "assistant",
-    "Hola, soy tu asistente del documento. Solo respondo con informacion de este PDF.",
+    t("assistantIntro"),
   );
 
   assistantForm.addEventListener("submit", async (event) => {
@@ -328,6 +509,7 @@ function initAssistant() {
           docKey,
           question,
           history: assistantHistory,
+          language: assistantLanguageLabel[currentLanguage] || "espanol",
         }),
       });
 
@@ -335,16 +517,16 @@ function initAssistant() {
 
       if (!response.ok || !data.ok) {
         const message =
-          data?.message || "No se pudo responder en este momento. Reintenta en unos segundos.";
+          data?.message || t("assistantRetry");
         addAssistantMessage("assistant", message);
         return;
       }
 
-      addAssistantMessage("assistant", data.answer || "No encuentro esa informacion en el documento.");
+      addAssistantMessage("assistant", data.answer || t("assistantNoAnswer"));
     } catch (error) {
       addAssistantMessage(
         "assistant",
-        "Error de conexion con el asistente. Verifica el despliegue e intenta de nuevo.",
+        t("assistantConnError"),
       );
     } finally {
       setAssistantLoading(false);
@@ -374,7 +556,7 @@ function addAssistantMessage(role, text) {
 function setAssistantLoading(isLoading) {
   assistantInput.disabled = isLoading;
   assistantSend.disabled = isLoading;
-  assistantSend.textContent = isLoading ? "Pensando..." : "Preguntar";
+  assistantSend.textContent = isLoading ? t("assistantThinking") : t("assistantAsk");
 }
 
 async function highlightQueryHint(page) {
@@ -384,7 +566,7 @@ async function highlightQueryHint(page) {
     const target = query.toLowerCase();
 
     if (target && allText.includes(target)) {
-      setViewerStatus(`Pagina ${currentPage}: se detecto coincidencia de "${query}".`);
+      setViewerStatus(`${t("highlightFoundPrefix")} ${currentPage}${t("highlightFoundMiddle")} "${query}".`);
     }
   } catch (error) {
     // Ignore text extraction issues for pages with complex fonts.
@@ -427,10 +609,10 @@ function buildCitation(selectedText, legalRef) {
   const base = `"${safeText}"`;
 
   if (legalRef) {
-    return `${base} (${legalRef}, Pagina ${currentPage}, ${selectedDoc.title})`;
+    return `${base} (${legalRef}, ${t("citationPage")} ${currentPage}, ${selectedDoc.title})`;
   }
 
-  return `${base} (Pagina ${currentPage}, ${selectedDoc.title})`;
+  return `${base} (${t("citationPage")} ${currentPage}, ${selectedDoc.title})`;
 }
 
 function detectLegalReference(selectedText, pageText) {
@@ -468,17 +650,17 @@ function extractReferenceFromText(text) {
 
   if (articleMatch) {
     const articleNumber = articleMatch[2] || articleMatch[1];
-    parts.push(`Articulo ${String(articleNumber).toUpperCase()}`);
+    parts.push(`${t("refArticle")} ${String(articleNumber).toUpperCase()}`);
   }
 
   if (paragraphMatch) {
     const paragraphValue = paragraphMatch[2];
-    parts.push(`Paragrafo ${String(paragraphValue).toUpperCase()}`);
+    parts.push(`${t("refParagraph")} ${String(paragraphValue).toUpperCase()}`);
   }
 
   if (incisoMatch) {
     const incisoValue = incisoMatch[2];
-    parts.push(`Inciso ${String(incisoValue).toUpperCase()}`);
+    parts.push(`${t("refInciso")} ${String(incisoValue).toUpperCase()}`);
   }
 
   return parts.join(", ");

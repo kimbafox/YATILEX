@@ -127,19 +127,31 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
     }
   }
 
-  async function askGeminiWithContext({ question, docTitle, context, history }) {
+  async function askGeminiWithContext({ question, docTitle, context, history, language }) {
     if (typeof fetch !== "function") {
       const fetchError = new Error("Fetch API no disponible en este runtime Node.");
       fetchError.userMessage = "El runtime del servidor no soporta fetch. Usa Node 18 o superior.";
       throw fetchError;
     }
 
+    const langLabel = ["espanol", "quechua", "aymara"].includes(String(language || "").toLowerCase())
+      ? String(language).toLowerCase()
+      : "espanol";
+
+    const noInfoFallbackByLanguage = {
+      espanol: "No encuentro esa informacion en el documento.",
+      quechua: "Mana kay documento ukhupi chay willayta tarinichu.",
+      aymara: "Janiw uka yatiyawix aka documento taypin jikxataskiti.",
+    };
+
+    const noInfoFallback = noInfoFallbackByLanguage[langLabel] || noInfoFallbackByLanguage.espanol;
+
     const systemInstruction = [
       "Eres el asistente juridico de Yatilex.",
       "Responde UNICAMENTE con la informacion del CONTEXTO OFICIAL recibido.",
       "No inventes, no uses conocimiento externo y no cites fuentes fuera del contexto.",
-      "Si la respuesta no aparece en el contexto, responde exactamente: No encuentro esa informacion en el documento.",
-      "Responde en espanol claro y breve.",
+      `Si la respuesta no aparece en el contexto, responde exactamente: ${noInfoFallback}`,
+      `Responde en ${langLabel}, de forma clara y breve.`,
     ].join(" ");
 
     const safeHistory = Array.isArray(history)
@@ -233,12 +245,12 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
       data?.candidates?.[0]?.content?.parts
         ?.map((part) => part.text || "")
         .join("\n")
-        .trim() || "No encuentro esa informacion en el documento.";
+        .trim() || noInfoFallback;
 
     return answer;
   }
 
-  async function askFromDocument({ docKey, question, history }) {
+  async function askFromDocument({ docKey, question, history, language }) {
     const selectedDoc = documentByKey[docKey];
     if (!selectedDoc) {
       throw new Error("Documento no valido para el asistente.");
@@ -258,6 +270,7 @@ function createAssistantService({ runtimeFrontendDir, model, apiKey }) {
       docTitle: selectedDoc.title,
       context,
       history,
+      language,
     });
   }
 

@@ -2,6 +2,71 @@ const libraryGrid = document.getElementById("library-grid");
 const librarySearch = document.getElementById("library-search");
 const libraryStatus = document.getElementById("library-status");
 const backHomeBtn = document.getElementById("back-home-btn");
+const languageButtons = document.querySelectorAll(".lang-chip");
+const libraryTitle = document.getElementById("library-title");
+const librarySubtitle = document.getElementById("library-subtitle");
+
+let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+
+const UI_TEXT = {
+  es: {
+    backHome: "Inicio",
+    title: "Biblioteca Juridica",
+    subtitle: "Selecciona un documento para abrirlo en el lector PDF.",
+    filterPlaceholder: "Filtrar por nombre del documento...",
+    openDocument: "Abrir documento",
+    noMatch: "No hay documentos que coincidan con el filtro.",
+    availablePrefix: "documento(s) disponible(s).",
+  },
+  qu: {
+    backHome: "Qallariy",
+    title: "Biblioteca Juridica",
+    subtitle: "PDF lectorpi kicharinapaq huk documento akllay.",
+    filterPlaceholder: "Documento sutimanta suysuy...",
+    openDocument: "Documento kichariy",
+    noMatch: "Mana documentos tupaqchu kay suysuypi.",
+    availablePrefix: "documento(s) kan.",
+  },
+  ay: {
+    backHome: "Qallta",
+    title: "Biblioteca Juridica",
+    subtitle: "Maya documento ajlliñam PDF lectoran jist'arañataki.",
+    filterPlaceholder: "Documento sutimpi thaqhaña...",
+    openDocument: "Documento jist'araña",
+    noMatch: "Janiw documentos uka filtro ukampix utjkiti.",
+    availablePrefix: "documento(s) utji.",
+  },
+};
+
+function t(key) {
+  const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
+  return UI_TEXT[lang][key] ?? UI_TEXT.es[key] ?? "";
+}
+
+function applyLanguage(language) {
+  currentLanguage = UI_TEXT[language] ? language : "es";
+  localStorage.setItem("yatilex_lang", currentLanguage);
+
+  if (backHomeBtn) {
+    backHomeBtn.textContent = t("backHome");
+  }
+
+  if (libraryTitle) {
+    libraryTitle.textContent = t("title");
+  }
+
+  if (librarySubtitle) {
+    librarySubtitle.textContent = t("subtitle");
+  }
+
+  if (librarySearch) {
+    librarySearch.placeholder = t("filterPlaceholder");
+  }
+
+  languageButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === currentLanguage));
+  });
+}
 
 const documents = [
   {
@@ -36,14 +101,55 @@ const documents = [
   },
 ];
 
+const documentDescriptions = {
+  es: {
+    "constitucion-bolivia": "Norma suprema del Estado Plurinacional de Bolivia.",
+    "codigo-civil-bolivia": "Normativa sobre personas, bienes y obligaciones civiles.",
+    "codigo-penal-bolivia": "Tipificacion de delitos y penas vigentes en Bolivia.",
+    "codigo-procesal-civil-bolivia": "Ley 439 del nuevo Codigo Procesal Civil en Bolivia.",
+    "ley-general-del-trabajo-bolivia": "Marco normativo base sobre relaciones laborales en Bolivia.",
+  },
+  qu: {
+    "constitucion-bolivia": "Bolivia suyup hatun kamachiy normasnin.",
+    "codigo-civil-bolivia": "Runakuna, imaymanakuna, obligación civiltawan normas.",
+    "codigo-penal-bolivia": "Boliviapi hucha-kunamanta huchachiy hinaspa sancionkuna.",
+    "codigo-procesal-civil-bolivia": "Boliviapi musuq Codigo Procesal Civil Ley 439.",
+    "ley-general-del-trabajo-bolivia": "Boliviapi llamk'ay masikunamanta norma base.",
+  },
+  ay: {
+    "constitucion-bolivia": "Bolivia markan jiliri kamachi norma.",
+    "codigo-civil-bolivia": "Jaqinaka, yänaka ukat obligaciones civiles tuqit normativa.",
+    "codigo-penal-bolivia": "Bolivian juchanakampi sanciones ukanakampi tipificacion.",
+    "codigo-procesal-civil-bolivia": "Bolivian machaq Codigo Procesal Civil Ley 439.",
+    "ley-general-del-trabajo-bolivia": "Bolivian irnaqawi tuqit norma base.",
+  },
+};
+
+function getDocumentDescription(docKey) {
+  const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
+  return (
+    documentDescriptions[lang]?.[docKey] ||
+    documentDescriptions.es?.[docKey] ||
+    ""
+  );
+}
+
 backHomeBtn?.addEventListener("click", () => {
   window.location.href = "index.html";
+});
+
+languageButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    applyLanguage(button.dataset.lang || "es");
+    renderLibrary(librarySearch?.value?.trim() || "");
+  });
 });
 
 librarySearch?.addEventListener("input", () => {
   renderLibrary(librarySearch.value.trim());
 });
 
+applyLanguage(currentLanguage);
 renderLibrary("");
 
 function renderLibrary(filterText) {
@@ -53,7 +159,7 @@ function renderLibrary(filterText) {
   libraryGrid.innerHTML = "";
 
   if (!visibleDocs.length) {
-    libraryStatus.textContent = "No hay documentos que coincidan con el filtro.";
+    libraryStatus.textContent = t("noMatch");
     return;
   }
 
@@ -65,8 +171,8 @@ function renderLibrary(filterText) {
     card.innerHTML = `
       <img src="${doc.cover}" alt="Portada de ${doc.title}" class="library-cover" />
       <h3>${doc.title}</h3>
-      <p>${doc.description}</p>
-      <button class="search-btn" type="button">Abrir documento</button>
+      <p>${getDocumentDescription(doc.key)}</p>
+      <button class="search-btn" type="button">${t("openDocument")}</button>
     `;
 
     const openButton = card.querySelector("button");
@@ -79,7 +185,7 @@ function renderLibrary(filterText) {
   });
 
   libraryGrid.appendChild(fragment);
-  libraryStatus.textContent = `${visibleDocs.length} documento(s) disponible(s).`;
+  libraryStatus.textContent = `${visibleDocs.length} ${t("availablePrefix")}`;
 }
 
 function normalizeText(value) {

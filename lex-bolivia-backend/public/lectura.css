@@ -44,6 +44,31 @@ body {
   background: #fffdf8bf;
 }
 
+.reader-language-switch {
+  max-width: 1240px;
+  margin: 10px auto 0;
+  padding: 0 20px;
+  display: flex;
+  gap: 8px;
+}
+
+.lang-chip {
+  border: 1px solid #cfb48f;
+  background: #fff8eb;
+  color: #6c3320;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-chip[aria-pressed="true"] {
+  background: linear-gradient(145deg, #ef7d35, #cf5c1f);
+  color: #fff;
+  border-color: #be5520;
+}
+
 .back-link {
   text-decoration: none;
   color: #8f3f25;
@@ -299,6 +324,12 @@ body {
 }
 
 @media (max-width: 920px) {
+  .reader-language-switch {
+    margin-top: 8px;
+    padding: 0 10px;
+    overflow-x: auto;
+  }
+
   .reader-header {
     margin: 10px 10px 0;
     padding: 10px 12px;
@@ -388,6 +419,10 @@ body {
 }
 
 @media (max-width: 560px) {
+  .reader-language-switch {
+    padding: 0 8px;
+  }
+
   .reader-header {
     margin-inline: 8px;
     padding: 8px 10px;

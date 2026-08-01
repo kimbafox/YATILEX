@@ -18,6 +18,8 @@ const assistantVoiceToggle = document.getElementById("assistant-voice-toggle");
 const languageButtons = document.querySelectorAll(".lang-chip");
 const assistantCtaLabel = document.querySelector(".assistant-cta-label");
 const searchButtonLabel = document.querySelector(".search-btn span");
+const visitorText = document.getElementById("visitor-text");
+const recommendedTitle = document.getElementById("recommended-title");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
@@ -89,6 +91,9 @@ const UI_TEXT = {
     statusMicBusy: "El microfono ya estaba en uso. Intenta de nuevo.",
     statusVoiceNoText: "No se detecto texto de voz.",
     statusSearchingPrefix: "Buscando:",
+    statusFoundResults: "Se encontraron",
+    statusResultsSuffix: "resultado(s).",
+    statusNoResults: "No se encontraron resultados.",
     statusBackendError: "Error conectando con el backend. Verifica que este encendido.",
     assistantIntro:
       "Hola, soy tu asistente de Yatilex. Te explico como usar el buscador, la biblioteca, el microfono y el lector PDF.",
@@ -96,6 +101,10 @@ const UI_TEXT = {
     assistantError: "No pude responder ahora, intenta otra vez.",
     assistantConnError: "Error de conexion con el asistente. Intenta nuevamente.",
     assistantLabel: "Asistente",
+    libraryLabel: "Biblioteca",
+    visitorLabel: "Visitante",
+    recommendedLabel: "Recomendado",
+    suggestionOpenPdf: "Abrir lector PDF",
     searchBtn: "Buscar",
     sendBtn: "Enviar",
     sendBtnLoading: "Enviando...",
@@ -122,6 +131,9 @@ const UI_TEXT = {
     statusMicBusy: "Microfonoqa mayqen llamk'aypi kashan. Maymanta yant'ay.",
     statusVoiceNoText: "Mana rimay qillqa tarisqachu.",
     statusSearchingPrefix: "Maskaspa:",
+    statusFoundResults: "Tarisqa",
+    statusResultsSuffix: "resultado(s).",
+    statusNoResults: "Mana resultados tarisqachu.",
     statusBackendError: "Backendman mana tinkuy atikunchu. Encendido kasqanta qhaway.",
     assistantIntro:
       "Napaykuy, noqaqa Yatilex yanapaq kani. Maskaqta, biblioteca-ta, microfono-ta, lector PDF-ta imayna apaykachayta willasayki.",
@@ -129,6 +141,10 @@ const UI_TEXT = {
     assistantError: "Kunanqa mana kutichiy atikurqachu, hukmanta yachay.",
     assistantConnError: "Yanapaqwan mana conexion kanchu. Yapamanta yachay.",
     assistantLabel: "Yanapaq",
+    libraryLabel: "Biblioteca",
+    visitorLabel: "Watukuq",
+    recommendedLabel: "Munasqa",
+    suggestionOpenPdf: "PDF lector kichariy",
     searchBtn: "Maskay",
     sendBtn: "Kachay",
     sendBtnLoading: "Kachachkan...",
@@ -155,6 +171,9 @@ const UI_TEXT = {
     statusMicBusy: "Microfonox mayni apnaqaskiwa. Mayampi yant'am.",
     statusVoiceNoText: "Janiw aru qillqata jikxataskiti.",
     statusSearchingPrefix: "Thaqhasina:",
+    statusFoundResults: "Jikxatasiwa",
+    statusResultsSuffix: "resultado(s).",
+    statusNoResults: "Janiw resultados utjkiti.",
     statusBackendError: "Backend ukar mantañax janiw atiskiti. Qhaway qhantayatati.",
     assistantIntro:
       "Kamisaki, nayax Yatilex yanapiriwa. Thaqhawi, biblioteca, microfono ukat lector PDF kunjamsa apnaqaña uka yatichaskayma.",
@@ -162,6 +181,10 @@ const UI_TEXT = {
     assistantError: "Jichhax janiw kutiyañ atiskti, mayampi yant'am.",
     assistantConnError: "Yanapirimpix janiw conexion utjkiti. Mayampi yant'am.",
     assistantLabel: "Yanapiri",
+    libraryLabel: "Biblioteca",
+    visitorLabel: "Uñt'iri",
+    recommendedLabel: "Wakiskiri",
+    suggestionOpenPdf: "PDF lector jist'araña",
     searchBtn: "Thaqha",
     sendBtn: "Khita",
     sendBtnLoading: "Khitaskiwa...",
@@ -217,6 +240,18 @@ function applyLanguage(language) {
     assistantCtaLabel.textContent = t("assistantLabel");
   }
 
+  if (libraryBtn) {
+    libraryBtn.textContent = t("libraryLabel");
+  }
+
+  if (visitorText) {
+    visitorText.textContent = t("visitorLabel");
+  }
+
+  if (recommendedTitle) {
+    recommendedTitle.textContent = t("recommendedLabel");
+  }
+
   if (searchButtonLabel) {
     searchButtonLabel.textContent = t("searchBtn");
   }
@@ -253,6 +288,7 @@ if (assistantBtn) {
 languageButtons.forEach((button) => {
   button.addEventListener("click", () => {
     applyLanguage(button.dataset.lang || "es");
+    renderSuggestions(input?.value?.trim() || "");
   });
 });
 
@@ -514,7 +550,11 @@ async function search(query, endpoint) {
 
     const data = await response.json();
     renderResults(data.results || []);
-    setStatus(data.message || `Se encontraron ${data.results?.length ?? 0} resultados.`);
+    if (data.results?.length) {
+      setStatus(`${t("statusFoundResults")} ${data.results.length} ${t("statusResultsSuffix")}`);
+    } else {
+      setStatus(t("statusNoResults"));
+    }
   } catch (error) {
     setStatus(t("statusBackendError"));
     renderResults([]);
@@ -600,7 +640,7 @@ function renderSuggestions(query) {
       <img src="${entry.document.cover}" alt="Portada de ${entry.document.title}" class="suggestion-cover" />
       <div>
         <p class="suggestion-title">${entry.document.title}</p>
-        <p class="suggestion-meta">Abrir lector PDF</p>
+        <p class="suggestion-meta">${t("suggestionOpenPdf")}</p>
       </div>
     `;
 
@@ -698,7 +738,7 @@ function renderResults(results) {
   resultsContainer.innerHTML = "";
 
   if (!results.length) {
-    resultsContainer.innerHTML = '<p class="status">Sin resultados.</p>';
+    resultsContainer.innerHTML = `<p class="status">${t("statusNoResults")}</p>`;
     return;
   }
 

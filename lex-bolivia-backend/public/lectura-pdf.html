@@ -15,12 +15,18 @@
   </head>
   <body>
     <header class="reader-header">
-      <a href="index.html" class="back-link">Volver al buscador</a>
+      <a id="back-link" href="index.html" class="back-link">Volver al buscador</a>
       <div class="brand">
         <img src="assets/logo.png" alt="Logo de Yatilex" class="brand-logo" />
         <h1>Yatilex</h1>
       </div>
     </header>
+
+    <section class="language-switch reader-language-switch" aria-label="Idioma">
+      <button class="lang-chip" type="button" data-lang="es" aria-pressed="true">Espanol</button>
+      <button class="lang-chip" type="button" data-lang="qu" aria-pressed="false">Quechua</button>
+      <button class="lang-chip" type="button" data-lang="ay" aria-pressed="false">Aymara</button>
+    </section>
 
     <main class="reader-layout">
       <aside class="book-card">
@@ -65,8 +71,8 @@
 
         <section class="assistant-panel" aria-label="Asistente virtual del documento">
           <div class="assistant-head">
-            <h4>Asistente del PDF</h4>
-            <p>Responde solo con informacion del documento actual.</p>
+            <h4 id="assistant-panel-title">Asistente del PDF</h4>
+            <p id="assistant-panel-subtitle">Responde solo con informacion del documento actual.</p>
           </div>
 
           <div id="assistant-messages" class="assistant-messages" aria-live="polite"></div>

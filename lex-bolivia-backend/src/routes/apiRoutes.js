@@ -153,6 +153,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
       const question = String(req.body?.question || "").trim();
       const docKey = String(req.body?.docKey || "").trim();
       const history = req.body?.history;
+      const language = String(req.body?.language || "espanol").trim().toLowerCase();
 
       if (!question) {
         return res.status(400).json({
@@ -172,6 +173,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
         docKey,
         question,
         history,
+        language,
       });
 
       return res.status(200).json({
