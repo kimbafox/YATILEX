@@ -44,7 +44,11 @@ const nextPageBtn = document.getElementById("next-page");
 const zoomOutBtn = document.getElementById("zoom-out");
 const zoomInBtn = document.getElementById("zoom-in");
 const fitWidthBtn = document.getElementById("fit-width");
+const likeBookBtn = document.getElementById("like-book");
 const copyCitationBtn = document.getElementById("copy-citation");
+const pageNoteLabel = document.getElementById("page-note-label");
+const pageNoteInput = document.getElementById("page-note-input");
+const savePageNoteBtn = document.getElementById("save-page-note");
 const pageInfo = document.getElementById("page-info");
 const zoomInfo = document.getElementById("zoom-info");
 const viewerStatus = document.getElementById("viewer-status");
@@ -68,6 +72,8 @@ let isRendering = false;
 let assistantHistory = [];
 let currentPageExtractedText = "";
 let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+let sessionToken = localStorage.getItem("yatilex_session_token") || "";
+let isBookLiked = false;
 
 const UI_TEXT = {
   es: {
@@ -79,6 +85,15 @@ const UI_TEXT = {
     next: "Siguiente",
     fitWidth: "Ajustar ancho",
     copyCitation: "Copiar cita con pagina",
+    likeBook: "Me gusta libro",
+    unlikeBook: "Quitar me gusta",
+    noteLabel: "Nota para esta pagina (opcional)",
+    notePlaceholder: "Escribe una nota o deja vacio",
+    savePage: "Guardar pagina de interes",
+    authRequired: "Debes conectar una cuenta profesional para usar esta opcion.",
+    savePageOk: "Pagina de interes guardada en tu perfil.",
+    likeSaved: "Libro guardado en tus favoritos.",
+    unlikeSaved: "Libro retirado de tus favoritos.",
     openPdf: "Abrir PDF",
     viewerLoading: "Cargando documento...",
     viewerLoadFail: "No se pudo cargar el visor PDF. Reintenta la pagina.",
@@ -117,6 +132,15 @@ const UI_TEXT = {
     next: "Qhipa",
     fitWidth: "Anchu tupachiy",
     copyCitation: "P'anqayuq cita kachuy",
+    likeBook: "Kay librota munani",
+    unlikeBook: "Munaqta qichuy",
+    noteLabel: "Kay paqinapaq nota (munasqa)",
+    notePlaceholder: "Nota qillqay utaq ch'usaq saqiy",
+    savePage: "Interes paqinata waqaychay",
+    authRequired: "Kay opcionta apaykachanapaq cuenta profesionalwan tinkinayki tiyan.",
+    savePageOk: "Interes paqina perfilniykipi waqaychasqa.",
+    likeSaved: "Libro favoritokunaman waqaychasqa.",
+    unlikeSaved: "Libro favoritokunamanta qichusqa.",
     openPdf: "PDF kichariy",
     viewerLoading: "Documento cargachkan...",
     viewerLoadFail: "PDF visor mana cargakunchu. Yapamanta yachay.",
@@ -155,6 +179,15 @@ const UI_TEXT = {
     next: "Qhipa",
     fitWidth: "Anchu askichaña",
     copyCitation: "Pankani cita apaqaña",
+    likeBook: "Aka librox gustituwa",
+    unlikeBook: "Me gusta apaqaña",
+    noteLabel: "Aka paginataki nota (munata)",
+    notePlaceholder: "Maya nota qillqt'am jan ukax ch'usaq jaytaña",
+    savePage: "Interes pagin imaña",
+    authRequired: "Aka opción apnaqañatakix cuenta profesional mantañamawa.",
+    savePageOk: "Interes paginax perfilaman imatawa.",
+    likeSaved: "Librox favoritosaman imatawa.",
+    unlikeSaved: "Librox favoritosamat apsuta.",
     openPdf: "PDF jist'araña",
     viewerLoading: "Documento cargaskiwa...",
     viewerLoadFail: "PDF visor janiw cargaskiti. Mayampi yant'am.",
@@ -229,6 +262,22 @@ function applyLanguage(language) {
     copyCitationBtn.textContent = t("copyCitation");
   }
 
+  if (likeBookBtn) {
+    likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
+  }
+
+  if (pageNoteLabel) {
+    pageNoteLabel.textContent = t("noteLabel");
+  }
+
+  if (pageNoteInput) {
+    pageNoteInput.placeholder = t("notePlaceholder");
+  }
+
+  if (savePageNoteBtn) {
+    savePageNoteBtn.textContent = t("savePage");
+  }
+
   if (openNativeLink) {
     openNativeLink.textContent = t("openPdf");
   }
@@ -282,6 +331,7 @@ if (window.pdfjsLib) {
 }
 
 initAssistant();
+hydrateProfileActions();
 
 prevPageBtn?.addEventListener("click", () => {
   if (!pdfDocument || currentPage <= 1) {
@@ -328,6 +378,71 @@ copyCitationBtn?.addEventListener("click", async () => {
   const citation = buildCitation(selected, legalRef);
   const copied = await copyToClipboard(citation);
   setViewerStatus(copied ? t("viewerCopyOk") : t("viewerCopyFail"));
+});
+
+likeBookBtn?.addEventListener("click", async () => {
+  if (!sessionToken) {
+    setViewerStatus(t("authRequired"));
+    return;
+  }
+
+  const targetLiked = !isBookLiked;
+
+  try {
+    const response = await fetch("/api/profile/likes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({
+        docKey,
+        liked: targetLiked,
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.message || "No se pudo guardar el like.");
+    }
+
+    isBookLiked = Boolean(data.liked);
+    likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
+    setViewerStatus(isBookLiked ? t("likeSaved") : t("unlikeSaved"));
+  } catch (error) {
+    setViewerStatus(error?.message || "No se pudo actualizar tu favorito.");
+  }
+});
+
+savePageNoteBtn?.addEventListener("click", async () => {
+  if (!sessionToken) {
+    setViewerStatus(t("authRequired"));
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/profile/page-notes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
+      },
+      body: JSON.stringify({
+        docKey,
+        pageNumber: currentPage,
+        note: String(pageNoteInput?.value || "").trim(),
+      }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.message || "No se pudo guardar la pagina de interes.");
+    }
+
+    setViewerStatus(data.message || t("savePageOk"));
+  } catch (error) {
+    setViewerStatus(error?.message || "No se pudo guardar la pagina de interes.");
+  }
 });
 
 window.addEventListener("resize", () => {
@@ -440,6 +555,36 @@ function fitPageToWidth() {
 
 function setViewerStatus(message) {
   viewerStatus.textContent = message;
+}
+
+async function hydrateProfileActions() {
+  if (!sessionToken) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/profile/me", {
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data?.ok) {
+      sessionToken = "";
+      localStorage.removeItem("yatilex_session_token");
+      localStorage.removeItem("yatilex_user");
+      return;
+    }
+
+    const likedBooks = Array.isArray(data.likedBooks) ? data.likedBooks : [];
+    isBookLiked = likedBooks.some((entry) => entry.doc_key === docKey);
+    if (likeBookBtn) {
+      likeBookBtn.textContent = isBookLiked ? t("unlikeBook") : t("likeBook");
+    }
+  } catch {
+    // keep local state if backend check fails
+  }
 }
 
 async function renderTextLayer(page, viewport) {

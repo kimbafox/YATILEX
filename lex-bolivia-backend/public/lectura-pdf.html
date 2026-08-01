@@ -54,6 +54,7 @@
           </div>
 
           <div class="tool-group" aria-label="Herramientas de texto">
+            <button id="like-book" class="viewer-btn" type="button">Me gusta libro</button>
             <button id="copy-citation" class="viewer-btn" type="button" disabled>
               Copiar cita con pagina
             </button>
@@ -68,6 +69,14 @@
           </div>
         </div>
         <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
+
+        <section class="page-note-box" aria-label="Pagina de interes">
+          <label id="page-note-label" for="page-note-input">Nota para esta pagina (opcional)</label>
+          <div class="page-note-row">
+            <input id="page-note-input" type="text" maxlength="350" placeholder="Escribe una nota o deja vacio" />
+            <button id="save-page-note" class="viewer-btn" type="button">Guardar pagina de interes</button>
+          </div>
+        </section>
 
         <section class="assistant-panel" aria-label="Asistente virtual del documento">
           <div class="assistant-head">

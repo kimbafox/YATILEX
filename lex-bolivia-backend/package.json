@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "pdf-parse": "^1.1.1"
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.13.1"
   }
 }

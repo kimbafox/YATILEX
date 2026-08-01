@@ -28,13 +28,13 @@
         <button class="icon-btn square-btn" type="button" aria-label="Notificaciones">
           <img src="assets/notificacion.png" alt="" class="notif-icon" aria-hidden="true" />
         </button>
-        <div class="visitor-box" aria-label="Usuario visitante">
+        <button id="visitor-btn" class="visitor-box" type="button" aria-label="Conectar cuenta profesional">
           <div class="avatar" aria-hidden="true">
             <span class="head"></span>
             <span class="body"></span>
           </div>
           <span id="visitor-text" class="visitor-text">Visitante</span>
-        </div>
+        </button>
       </nav>
     </header>
 
@@ -141,6 +141,17 @@
       </section>
     </main>
 
+    <section id="auth-modal" class="auth-modal" hidden aria-label="Ingreso profesional">
+      <div class="auth-modal-card">
+        <button id="auth-close" class="assistant-close-btn" type="button" aria-label="Cerrar">X</button>
+        <h3 id="auth-title">Conecta tu cuenta profesional</h3>
+        <p id="auth-subtitle">Inicia sesion con Google para guardar tus libros favoritos y paginas de interes.</p>
+        <div id="google-login-slot" class="google-login-slot"></div>
+        <p id="auth-status" class="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

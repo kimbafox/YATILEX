@@ -18,8 +18,15 @@ const assistantVoiceToggle = document.getElementById("assistant-voice-toggle");
 const languageButtons = document.querySelectorAll(".lang-chip");
 const assistantCtaLabel = document.querySelector(".assistant-cta-label");
 const searchButtonLabel = document.querySelector(".search-btn span");
+const visitorBtn = document.getElementById("visitor-btn");
 const visitorText = document.getElementById("visitor-text");
 const recommendedTitle = document.getElementById("recommended-title");
+const authModal = document.getElementById("auth-modal");
+const authClose = document.getElementById("auth-close");
+const authTitle = document.getElementById("auth-title");
+const authSubtitle = document.getElementById("auth-subtitle");
+const authStatus = document.getElementById("auth-status");
+const googleLoginSlot = document.getElementById("google-login-slot");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
@@ -78,6 +85,10 @@ let micAutoStopTimer = null;
 let siteAssistantHistory = [];
 let assistantVoiceEnabled = false;
 let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+let googleClientId = "";
+let googleReady = false;
+let sessionToken = localStorage.getItem("yatilex_session_token") || "";
+let currentUser = null;
 
 const UI_TEXT = {
   es: {
@@ -103,8 +114,14 @@ const UI_TEXT = {
     assistantLabel: "Asistente",
     libraryLabel: "Biblioteca",
     visitorLabel: "Visitante",
+    visitorProLabel: "Profesional",
     recommendedLabel: "Recomendado",
     suggestionOpenPdf: "Abrir lector PDF",
+    authTitle: "Conecta tu cuenta profesional",
+    authSubtitle: "Inicia sesion con Google para guardar tus libros favoritos y paginas de interes.",
+    authNoGoogle: "GOOGLE_CLIENT_ID no esta configurado en Railway.",
+    authLoading: "Preparando acceso con Google...",
+    authError: "No se pudo iniciar sesion con Google.",
     searchBtn: "Buscar",
     sendBtn: "Enviar",
     sendBtnLoading: "Enviando...",
@@ -143,8 +160,14 @@ const UI_TEXT = {
     assistantLabel: "Yanapaq",
     libraryLabel: "Biblioteca",
     visitorLabel: "Watukuq",
+    visitorProLabel: "Profesional",
     recommendedLabel: "Munasqa",
     suggestionOpenPdf: "PDF lector kichariy",
+    authTitle: "Cuenta profesional nisqayki tinkichiy",
+    authSubtitle: "Googlewan yaykuy, munasqa librokunata hinaspa interes paqinakunata waqaychanaykipaq.",
+    authNoGoogle: "GOOGLE_CLIENT_ID manan Railwaypi configuradochu.",
+    authLoading: "Google yaykuyta wakichichkan...",
+    authError: "Googlewan mana yaykuy atikurqachu.",
     searchBtn: "Maskay",
     sendBtn: "Kachay",
     sendBtnLoading: "Kachachkan...",
@@ -183,8 +206,14 @@ const UI_TEXT = {
     assistantLabel: "Yanapiri",
     libraryLabel: "Biblioteca",
     visitorLabel: "Uñt'iri",
+    visitorProLabel: "Profesional",
     recommendedLabel: "Wakiskiri",
     suggestionOpenPdf: "PDF lector jist'araña",
+    authTitle: "Cuenta profesional ukar mantaña",
+    authSubtitle: "Google tuqiw mantaña, munat libronaka ukat interes paginanaka imañataki.",
+    authNoGoogle: "GOOGLE_CLIENT_ID janiw Railwayan wakicht'atakiti.",
+    authLoading: "Google mantaña wakichaski...",
+    authError: "Google tuqit mantañax janiw atiskiti.",
     searchBtn: "Thaqha",
     sendBtn: "Khita",
     sendBtnLoading: "Khitaskiwa...",
@@ -245,7 +274,15 @@ function applyLanguage(language) {
   }
 
   if (visitorText) {
-    visitorText.textContent = t("visitorLabel");
+    visitorText.textContent = currentUser ? t("visitorProLabel") : t("visitorLabel");
+  }
+
+  if (authTitle) {
+    authTitle.textContent = t("authTitle");
+  }
+
+  if (authSubtitle) {
+    authSubtitle.textContent = t("authSubtitle");
   }
 
   if (recommendedTitle) {
@@ -278,6 +315,23 @@ if (libraryBtn) {
     window.location.href = "biblioteca.html";
   });
 }
+
+if (visitorBtn) {
+  visitorBtn.addEventListener("click", () => {
+    if (currentUser) {
+      window.location.href = "perfilpro.html";
+      return;
+    }
+
+    openAuthModal();
+  });
+}
+
+authClose?.addEventListener("click", () => {
+  if (authModal) {
+    authModal.hidden = true;
+  }
+});
 
 if (assistantBtn) {
   assistantBtn.addEventListener("click", () => {
@@ -477,6 +531,7 @@ if (carouselTrack) {
 }
 
 applyLanguage(currentLanguage);
+hydrateAuthState();
 
 input.addEventListener("input", () => {
   activeSuggestionIndex = -1;
@@ -801,6 +856,181 @@ function clearMicAutoStopTimer() {
   if (micAutoStopTimer) {
     clearTimeout(micAutoStopTimer);
     micAutoStopTimer = null;
+  }
+}
+
+async function hydrateAuthState() {
+  const rawUser = localStorage.getItem("yatilex_user");
+  if (rawUser) {
+    try {
+      currentUser = JSON.parse(rawUser);
+    } catch {
+      currentUser = null;
+    }
+  }
+
+  if (!sessionToken || !currentUser) {
+    clearAuthState();
+    updateVisitorUi();
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/profile/me", {
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      clearAuthState();
+      updateVisitorUi();
+      return;
+    }
+
+    const data = await response.json();
+    if (!data?.ok || !data?.user) {
+      clearAuthState();
+      updateVisitorUi();
+      return;
+    }
+
+    currentUser = data.user;
+    localStorage.setItem("yatilex_user", JSON.stringify(currentUser));
+  } catch {
+    clearAuthState();
+  }
+
+  updateVisitorUi();
+}
+
+function clearAuthState() {
+  sessionToken = "";
+  currentUser = null;
+  localStorage.removeItem("yatilex_session_token");
+  localStorage.removeItem("yatilex_user");
+}
+
+function updateVisitorUi() {
+  if (!visitorBtn || !visitorText) {
+    return;
+  }
+
+  if (currentUser) {
+    visitorBtn.classList.add("is-pro");
+    visitorText.textContent = t("visitorProLabel");
+    visitorBtn.title = currentUser.email || "Perfil profesional";
+  } else {
+    visitorBtn.classList.remove("is-pro");
+    visitorText.textContent = t("visitorLabel");
+    visitorBtn.title = "Conectar cuenta";
+  }
+}
+
+async function openAuthModal() {
+  if (!authModal) {
+    return;
+  }
+
+  authModal.hidden = false;
+  if (authStatus) {
+    authStatus.textContent = t("authLoading");
+  }
+
+  try {
+    const response = await fetch("/api/auth/google-client-id");
+    const data = await response.json();
+
+    if (!response.ok || !data?.configured || !data?.clientId) {
+      if (authStatus) {
+        authStatus.textContent = t("authNoGoogle");
+      }
+      return;
+    }
+
+    googleClientId = data.clientId;
+    await ensureGoogleButton();
+    if (authStatus) {
+      authStatus.textContent = "";
+    }
+  } catch {
+    if (authStatus) {
+      authStatus.textContent = t("authError");
+    }
+  }
+}
+
+async function ensureGoogleButton() {
+  if (!window.google?.accounts?.id || !googleLoginSlot) {
+    if (authStatus) {
+      authStatus.textContent = t("authError");
+    }
+    return;
+  }
+
+  if (!googleReady) {
+    window.google.accounts.id.initialize({
+      client_id: googleClientId,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+    });
+    googleReady = true;
+  }
+
+  googleLoginSlot.innerHTML = "";
+  window.google.accounts.id.renderButton(googleLoginSlot, {
+    type: "standard",
+    theme: "filled_blue",
+    size: "large",
+    text: "signin_with",
+    shape: "rectangular",
+    width: 320,
+  });
+}
+
+async function handleGoogleCredential(response) {
+  const credential = String(response?.credential || "").trim();
+  if (!credential) {
+    if (authStatus) {
+      authStatus.textContent = t("authError");
+    }
+    return;
+  }
+
+  try {
+    if (authStatus) {
+      authStatus.textContent = t("authLoading");
+    }
+
+    const loginResponse = await fetch("/api/auth/google-login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ credential }),
+    });
+
+    const data = await loginResponse.json();
+    if (!loginResponse.ok || !data?.ok || !data?.sessionToken || !data?.user) {
+      throw new Error(data?.message || t("authError"));
+    }
+
+    sessionToken = data.sessionToken;
+    currentUser = data.user;
+    localStorage.setItem("yatilex_session_token", sessionToken);
+    localStorage.setItem("yatilex_user", JSON.stringify(currentUser));
+    updateVisitorUi();
+
+    if (authModal) {
+      authModal.hidden = true;
+    }
+
+    setStatus(`Cuenta conectada: ${currentUser.email}`);
+  } catch (error) {
+    if (authStatus) {
+      authStatus.textContent = error?.message || t("authError");
+    }
   }
 }
 

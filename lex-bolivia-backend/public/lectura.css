@@ -250,6 +250,35 @@ body {
   font-size: 0.9rem;
 }
 
+.page-note-box {
+  margin: 10px 6px 2px;
+  border: 1px solid #d8c3a5;
+  border-radius: 10px;
+  background: #fffaf2;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.page-note-box label {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.page-note-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+#page-note-input {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
 .assistant-panel {
   margin: 14px 6px 4px;
   border: 1px solid #d8c3a5;
@@ -465,6 +494,10 @@ body {
   .assistant-panel {
     margin-inline: 4px;
     padding: 10px;
+  }
+
+  .page-note-row {
+    grid-template-columns: 1fr;
   }
 
   .assistant-form {

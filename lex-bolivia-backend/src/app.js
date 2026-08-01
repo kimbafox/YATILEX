@@ -2,6 +2,7 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const { createApiRouter } = require("./routes/apiRoutes");
+const { initDb, hasDatabase } = require("./db");
 
 const app = express();
 const projectRoot = path.resolve(__dirname, "..");
@@ -19,6 +20,16 @@ const frontendDir = frontendCandidates.find((candidate) =>
 const runtimeFrontendDir = frontendDir || path.resolve(projectRoot, "public");
 const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
 const assistantApiKey = String(process.env.GEMINI_API_KEY || "").trim();
+
+if (hasDatabase()) {
+  initDb()
+    .then(() => {
+      console.log("Base de datos inicializada.");
+    })
+    .catch((error) => {
+      console.error("No se pudo inicializar la base de datos:", error.message);
+    });
+}
 
 app.use(express.json({ limit: "1mb" }));
 
