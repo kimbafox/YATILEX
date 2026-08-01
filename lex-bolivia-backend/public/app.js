@@ -13,7 +13,6 @@ const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
 const searchZone = document.querySelector(".search-zone");
 const voiceIndicator = document.getElementById("voice-indicator");
-const voiceIndicatorText = document.getElementById("voice-indicator-text");
 const carouselTrack = document.getElementById("carousel-track");
 const carouselPrev = document.getElementById("carousel-prev");
 const carouselNext = document.getElementById("carousel-next");
@@ -48,7 +47,9 @@ let carouselTimer;
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognition = null;
-let isListening = false;
+let micState = "idle";
+let liveTranscript = "";
+let micAutoStopTimer = null;
 
 if (libraryBtn) {
   libraryBtn.addEventListener("click", () => {
@@ -66,7 +67,7 @@ if (SpeechRecognition) {
   try {
     recognition = new SpeechRecognition();
     recognition.lang = "es-ES";
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
   } catch (error) {
@@ -76,17 +77,48 @@ if (SpeechRecognition) {
 
 if (recognition) {
   recognition.onstart = () => {
-    isListening = true;
+    micState = "listening";
     micBtn.classList.add("listening");
+    micBtn.setAttribute("aria-pressed", "true");
     setVoiceState("recording");
     setStatus("Escuchando... habla ahora.");
+
+    clearMicAutoStopTimer();
+    micAutoStopTimer = setTimeout(() => {
+      safeStopRecognition();
+    }, 12000);
   };
 
   recognition.onresult = async (event) => {
+    let interimText = "";
+    let finalText = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      const result = event.results[i];
+      const value = (result[0]?.transcript || "").trim();
+
+      if (result.isFinal) {
+        finalText += `${value} `;
+      } else {
+        interimText += `${value} `;
+      }
+    }
+
+    if (finalText) {
+      liveTranscript = `${liveTranscript} ${finalText}`.trim();
+    }
+
+    const visibleTranscript = `${liveTranscript} ${interimText}`.trim();
+    if (visibleTranscript) {
+      input.value = visibleTranscript;
+    }
+
     setVoiceState("recognizing");
-    const transcript = event.results[0][0].transcript.trim();
-    input.value = transcript;
-    await searchByVoice(transcript);
+
+    if (liveTranscript) {
+      await searchByVoice(liveTranscript);
+      liveTranscript = "";
+    }
   };
 
   recognition.onerror = (event) => {
@@ -104,12 +136,16 @@ if (recognition) {
   };
 
   recognition.onend = () => {
-    isListening = false;
+    clearMicAutoStopTimer();
+    micState = "idle";
+    liveTranscript = "";
     micBtn.classList.remove("listening");
+    micBtn.setAttribute("aria-pressed", "false");
     setVoiceState("idle");
   };
 } else {
   micBtn.disabled = true;
+  micBtn.setAttribute("aria-pressed", "false");
   setStatus("Tu navegador no soporta reconocimiento de voz.");
 }
 
@@ -123,15 +159,22 @@ micBtn.addEventListener("click", () => {
     return;
   }
 
-  if (isListening) {
-    recognition.stop();
-    setVoiceState("idle");
+  if (micState === "starting") {
+    return;
+  }
+
+  if (micState === "listening") {
+    micState = "stopping";
+    safeStopRecognition();
     return;
   }
 
   try {
+    micState = "starting";
+    liveTranscript = "";
     recognition.start();
   } catch (error) {
+    micState = "idle";
     setStatus("El microfono ya estaba en uso. Intenta de nuevo.");
   }
 });
@@ -431,23 +474,21 @@ function renderResults(results) {
 }
 
 function setVoiceState(state) {
-  if (!voiceIndicator || !voiceIndicatorText || !searchZone) {
+  if (!voiceIndicator || !searchZone) {
     return;
   }
 
   if (state === "recording") {
     voiceIndicator.hidden = false;
-    voiceIndicatorText.textContent = "Grabando voz...";
     searchZone.classList.remove("is-recognizing");
     return;
   }
 
   if (state === "recognizing") {
     voiceIndicator.hidden = false;
-    voiceIndicatorText.textContent = "Reconociendo voz...";
     searchZone.classList.add("is-recognizing");
     setTimeout(() => {
-      if (!isListening) {
+      if (micState !== "listening") {
         setVoiceState("idle");
       }
     }, 1400);
@@ -456,4 +497,28 @@ function setVoiceState(state) {
 
   voiceIndicator.hidden = true;
   searchZone.classList.remove("is-recognizing");
+}
+
+function safeStopRecognition() {
+  clearMicAutoStopTimer();
+
+  try {
+    recognition.stop();
+  } catch (error) {
+    try {
+      recognition.abort();
+    } catch {
+      micState = "idle";
+      micBtn.classList.remove("listening");
+      micBtn.setAttribute("aria-pressed", "false");
+      setVoiceState("idle");
+    }
+  }
+}
+
+function clearMicAutoStopTimer() {
+  if (micAutoStopTimer) {
+    clearTimeout(micAutoStopTimer);
+    micAutoStopTimer = null;
+  }
 }

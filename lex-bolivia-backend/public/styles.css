@@ -414,22 +414,20 @@ button {
   animation: pulse 1s infinite;
 }
 
+.mic-btn[aria-pressed="true"] {
+  background: #ffd9c8;
+  border-color: #cf6239;
+}
+
 .voice-indicator {
   margin-top: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 0;
   background: #fff6ea;
   border: 1px solid #e4c29b;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 999px;
-}
-
-.voice-indicator p {
-  margin: 0;
-  color: #9f4d2a;
-  font-size: 0.88rem;
-  font-weight: 600;
 }
 
 .voice-bars {
