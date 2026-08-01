@@ -150,8 +150,8 @@ body {
   margin: 24px auto;
   padding: 0 20px 34px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
-  grid-template-areas: "viewer sidebar";
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  grid-template-areas: "sidebar viewer";
   gap: 18px;
   align-items: start;
 }
@@ -206,43 +206,6 @@ body {
   margin: 0;
   color: var(--muted);
   line-height: 1.45;
-}
-
-.book-metrics {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.metric-box,
-.reader-tip-card {
-  border: 1px solid rgba(214, 191, 157, 0.86);
-  background: var(--panel-strong);
-  border-radius: 18px;
-  padding: 14px;
-}
-
-.metric-label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.metric-box strong {
-  font-size: 0.95rem;
-  line-height: 1.35;
-}
-
-.reader-tip-card h3 {
-  margin: 0 0 8px;
-  font-size: 0.98rem;
-}
-
-.reader-tip-card p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
 }
 
 .pdf-panel {
@@ -501,6 +464,19 @@ body {
   gap: 10px;
 }
 
+.book-card .page-note-row,
+.book-card .assistant-form {
+  grid-template-columns: 1fr;
+}
+
+.book-card .save-pill {
+  display: none;
+}
+
+.book-card .assistant-messages {
+  max-height: 220px;
+}
+
 .assistant-head h4 {
   margin: 0;
   font-size: 1rem;
@@ -629,16 +605,12 @@ body {
   .reader-layout {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "viewer"
-      "sidebar";
+      "sidebar"
+      "viewer";
   }
 
   .book-card {
     position: static;
-  }
-
-  .book-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

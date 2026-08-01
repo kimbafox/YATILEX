@@ -47,20 +47,41 @@
           <p id="query-info">Lectura general</p>
         </div>
 
-        <div class="book-metrics" aria-label="Resumen del documento">
-          <article class="metric-box">
-            <span class="metric-label">Modo</span>
-            <strong>Lectura y apuntes</strong>
-          </article>
-          <article class="metric-box">
-            <span class="metric-label">Guardado</span>
-            <strong>Captura incluida</strong>
-          </article>
-        </div>
+        <section class="page-note-box" aria-label="Pagina de interes">
+          <div class="page-note-head">
+            <div>
+              <label id="page-note-label" for="page-note-input">Nota para esta pagina (opcional)</label>
+              <p id="page-note-helper" class="page-note-helper">
+                Al guardar se genera una captura con tus subrayados para descargarla desde tu perfil.
+              </p>
+            </div>
+            <span class="save-pill">Apunte visual</span>
+          </div>
+          <div class="page-note-row">
+            <input id="page-note-input" type="text" maxlength="350" placeholder="Escribe una nota o deja vacio" />
+            <button id="save-page-note" class="viewer-link page-save-btn" type="button">Guardar pagina de interes</button>
+          </div>
+        </section>
 
-        <section class="reader-tip-card" aria-label="Consejos de uso">
-          <h3>Flujo recomendado</h3>
-          <p id="tool-hint">Activa el marcador, subraya lo importante y luego guarda tu apunte con captura.</p>
+        <section class="assistant-panel" aria-label="Asistente virtual del documento">
+          <div class="assistant-head">
+            <h4 id="assistant-panel-title">Asistente del PDF</h4>
+            <p id="assistant-panel-subtitle">Responde solo con informacion del documento actual.</p>
+          </div>
+
+          <div id="assistant-messages" class="assistant-messages" aria-live="polite"></div>
+
+          <form id="assistant-form" class="assistant-form" autocomplete="off">
+            <label for="assistant-input" class="sr-only">Pregunta al asistente</label>
+            <input
+              id="assistant-input"
+              type="text"
+              placeholder="Pregunta sobre este PDF..."
+              required
+              maxlength="500"
+            />
+            <button id="assistant-send" class="viewer-link" type="submit">Preguntar</button>
+          </form>
         </section>
       </aside>
 
@@ -113,43 +134,6 @@
           </div>
         </div>
         <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
-
-        <section class="page-note-box" aria-label="Pagina de interes">
-          <div class="page-note-head">
-            <div>
-              <label id="page-note-label" for="page-note-input">Nota para esta pagina (opcional)</label>
-              <p id="page-note-helper" class="page-note-helper">
-                Al guardar se genera una captura con tus subrayados para descargarla desde tu perfil.
-              </p>
-            </div>
-            <span class="save-pill">Apunte visual</span>
-          </div>
-          <div class="page-note-row">
-            <input id="page-note-input" type="text" maxlength="350" placeholder="Escribe una nota o deja vacio" />
-            <button id="save-page-note" class="viewer-link page-save-btn" type="button">Guardar pagina de interes</button>
-          </div>
-        </section>
-
-        <section class="assistant-panel" aria-label="Asistente virtual del documento">
-          <div class="assistant-head">
-            <h4 id="assistant-panel-title">Asistente del PDF</h4>
-            <p id="assistant-panel-subtitle">Responde solo con informacion del documento actual.</p>
-          </div>
-
-          <div id="assistant-messages" class="assistant-messages" aria-live="polite"></div>
-
-          <form id="assistant-form" class="assistant-form" autocomplete="off">
-            <label for="assistant-input" class="sr-only">Pregunta al asistente</label>
-            <input
-              id="assistant-input"
-              type="text"
-              placeholder="Pregunta sobre este PDF..."
-              required
-              maxlength="500"
-            />
-            <button id="assistant-send" class="viewer-link" type="submit">Preguntar</button>
-          </form>
-        </section>
       </section>
     </main>
 
