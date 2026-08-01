@@ -47,49 +47,56 @@ let recognition;
 let isListening = false;
 
 if (libraryBtn) {
-  libraryBtn.addEventListener("click", () => {
-    window.location.href = "biblioteca.html";
-  });
-}
-
+  try {
+    recognition = new SpeechRecognition();
+    recognition.lang = "es-ES";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+  } catch (error) {
+    recognition = null;
+  }
 if (SpeechRecognition) {
-  recognition = new SpeechRecognition();
-  recognition.lang = "es-BO";
-  recognition.interimResults = false;
-  recognition.continuous = false;
-  recognition.maxAlternatives = 1;
-
-  recognition.onstart = () => {
-    isListening = true;
-    micBtn.classList.add("listening");
-    setStatus("Escuchando... habla ahora.");
-  };
-
-  recognition.onresult = async (event) => {
-    const transcript = event.results[0][0].transcript.trim();
-    input.value = transcript;
-    await searchByVoice(transcript);
-  };
-
-  recognition.onerror = (event) => {
-    const errorMessages = {
-      "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
-      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
-      "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
-      "audio-capture": "No se encontro un microfono disponible.",
-      aborted: "Busqueda por voz cancelada.",
-      network: "Error de red durante el reconocimiento de voz.",
+  if (recognition) {
+    recognition.onstart = () => {
+      isListening = true;
+      micBtn.classList.add("listening");
+      setStatus("Escuchando... habla ahora.");
     };
 
-    setStatus(errorMessages[event.error] || `No se pudo usar el microfono: ${event.error}`);
+    recognition.onresult = async (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      input.value = transcript;
+      await searchByVoice(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      const errorMessages = {
+        "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
+        "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
+        "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
+        "audio-capture": "No se encontro un microfono disponible.",
+        aborted: "Busqueda por voz cancelada.",
+        network: "Error de red durante el reconocimiento de voz.",
+        "language-not-supported": "Idioma no soportado para reconocimiento de voz.",
+      };
+      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
+      setStatus(errorMessages[event.error] || `No se pudo usar el microfono: ${event.error}`);
+    };
+      aborted: "Busqueda por voz cancelada.",
+    recognition.onend = () => {
+      isListening = false;
+      micBtn.classList.remove("listening");
+    };
+  }
   };
 
-  recognition.onend = () => {
+if (!recognition) {
     isListening = false;
     micBtn.classList.remove("listening");
   };
 } else {
-  micBtn.disabled = true;
+micBtn.addEventListener("click", () => {
   setStatus("Tu navegador no soporta reconocimiento de voz.");
 }
 
@@ -106,16 +113,6 @@ micBtn.addEventListener("click", async () => {
   if (isListening) {
     recognition.stop();
     return;
-  }
-
-  if (navigator.mediaDevices?.getUserMedia) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    } catch (error) {
-      setStatus("No se pudo acceder al microfono. Revisa permisos del navegador.");
-      return;
-    }
   }
 
   try {
