@@ -775,15 +775,66 @@ button {
 
   .recommended {
     margin-top: 24px;
+    background: #fff8ee9c;
+    border: 1px solid #dbc3a3;
+    border-radius: 16px;
+    padding: 12px 10px 14px;
   }
 
   .recommended h2 {
     font-size: 1.05rem;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .carousel-nav {
+    display: none;
+  }
+
+  .carousel {
+    grid-template-columns: 1fr;
+  }
+
+  .carousel-track {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding: 6px 2px 2px;
+    justify-items: initial;
+  }
+
+  .carousel-track::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .carousel-track::-webkit-scrollbar-thumb {
+    background: #d2b590;
+  }
+
+  .carousel-item,
+  .carousel-item.is-side,
+  .carousel-item.is-center {
+    min-width: 56vw;
+    max-width: 230px;
+    scroll-snap-align: center;
+    transform: none;
+    opacity: 1;
   }
 
   .carousel-item .carousel-cover,
   .carousel-item.is-center .carousel-cover {
-    max-width: 156px;
-    height: 220px;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    aspect-ratio: 3 / 4;
+  }
+
+  .carousel-item .carousel-name {
+    font-size: 0.9rem;
+  }
+
+  .results {
+    grid-template-columns: 1fr;
   }
 }

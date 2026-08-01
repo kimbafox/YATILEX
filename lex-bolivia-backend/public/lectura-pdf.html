@@ -32,10 +32,25 @@
       <section class="pdf-panel">
         <h3 id="panel-title">Documento PDF</h3>
         <p id="search-highlight" class="search-highlight">Sin clausula destacada.</p>
-        <iframe id="pdf-frame" title="Lector PDF"></iframe>
+        <div class="viewer-toolbar" aria-label="Controles del PDF">
+          <button id="prev-page" class="viewer-btn" type="button">Anterior</button>
+          <span id="page-info" class="page-info">Pagina 1 / 1</span>
+          <button id="next-page" class="viewer-btn" type="button">Siguiente</button>
+          <button id="zoom-out" class="viewer-btn" type="button">-</button>
+          <span id="zoom-info" class="page-info">100%</span>
+          <button id="zoom-in" class="viewer-btn" type="button">+</button>
+          <button id="fit-width" class="viewer-btn" type="button">Ajustar ancho</button>
+          <a id="open-native" class="viewer-link" target="_blank" rel="noopener">Abrir PDF</a>
+        </div>
+
+        <div id="pdf-viewer" class="pdf-viewer" role="region" aria-label="Visor de PDF">
+          <canvas id="pdf-canvas"></canvas>
+        </div>
+        <p id="viewer-status" class="viewer-status" aria-live="polite">Cargando documento...</p>
       </section>
     </main>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="lectura-pdf.js" defer></script>
   </body>
 </html>

@@ -99,6 +99,70 @@ body {
   flex-direction: column;
 }
 
+.viewer-toolbar {
+  margin: 0 6px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.viewer-btn,
+.viewer-link {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  padding: 7px 10px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.86rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.viewer-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.viewer-link {
+  background: #8f3f25;
+  border-color: transparent;
+  color: #fff;
+}
+
+.page-info {
+  color: var(--muted);
+  font-size: 0.86rem;
+  min-width: 96px;
+}
+
+.pdf-viewer {
+  width: 100%;
+  min-height: 72vh;
+  border: 1px solid #dac7ab;
+  border-radius: 12px;
+  background: #e7ddd0;
+  display: grid;
+  place-items: start center;
+  overflow: auto;
+  padding: 10px;
+}
+
+#pdf-canvas {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  background: #fff;
+  box-shadow: 0 16px 30px rgba(28, 16, 6, 0.16);
+}
+
+.viewer-status {
+  margin: 10px 6px 2px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .pdf-panel h3 {
   margin: 4px 6px 10px;
 }
@@ -115,14 +179,6 @@ body {
   background: #ffd58f;
   color: #382109;
   padding: 1px 5px;
-}
-
-#pdf-frame {
-  width: 100%;
-  height: 72vh;
-  border: 1px solid #dac7ab;
-  border-radius: 12px;
-  background: #fff;
 }
 
 @media (max-width: 920px) {
@@ -192,9 +248,26 @@ body {
     padding: 7px 8px;
   }
 
-  #pdf-frame {
-    height: 66vh;
+  .viewer-toolbar {
+    margin-inline: 4px;
+    gap: 6px;
+  }
+
+  .viewer-btn,
+  .viewer-link {
+    padding: 7px 8px;
+    font-size: 0.8rem;
+  }
+
+  .page-info {
+    min-width: 84px;
+    font-size: 0.8rem;
+  }
+
+  .pdf-viewer {
+    min-height: 66vh;
     border-radius: 8px;
+    padding: 8px;
   }
 }
 
@@ -216,7 +289,20 @@ body {
     padding: 0 8px 10px;
   }
 
-  #pdf-frame {
-    height: 64vh;
+  .viewer-toolbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+  }
+
+  .viewer-btn,
+  .viewer-link,
+  .page-info {
+    text-align: center;
+    min-width: 0;
+  }
+
+  .pdf-viewer {
+    min-height: 64vh;
   }
 }
