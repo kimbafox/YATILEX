@@ -1,13 +1,11 @@
 {
-  "name": "yatilex-monorepo",
+  "name": "yatilex-server",
   "version": "1.0.0",
   "private": true,
-  "description": "Monorepo deploy helper para Railway",
+  "description": "Servidor principal para despliegue en Railway",
   "scripts": {
     "build": "echo Build OK",
-    "start": "npm --prefix lex-bolivia-backend start",
-    "start:backend": "npm --prefix lex-bolivia-backend start",
-    "start:frontend": "npm --prefix lex-bolivia-frontend start"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18"
