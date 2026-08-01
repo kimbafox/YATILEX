@@ -30,6 +30,7 @@ const params = new URLSearchParams(window.location.search);
 const docKey = params.get("doc") || "constitucion-bolivia";
 const query = (params.get("q") || "").trim();
 const openAssistant = params.get("assistant") === "1";
+const requestedPage = Math.max(1, Number(params.get("page") || 1));
 
 const selectedDoc = documents[docKey] || documents["constitucion-bolivia"];
 
@@ -478,7 +479,7 @@ async function setupViewer(url) {
   try {
     const loadingTask = window.pdfjsLib.getDocument(url);
     pdfDocument = await loadingTask.promise;
-    currentPage = 1;
+    currentPage = Math.min(Math.max(requestedPage, 1), pdfDocument.numPages || 1);
 
     fitPageToWidth();
     await renderPage();

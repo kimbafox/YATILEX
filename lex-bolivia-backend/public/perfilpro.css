@@ -171,6 +171,18 @@ body {
   font-size: 0.9rem;
 }
 
+.open-reader-btn {
+  margin-top: 8px;
+  border: 1px solid #8f3f25;
+  background: #8f3f25;
+  color: #fff;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .profile-status {
   margin: 12px 0 0;
   color: #8f3f25;

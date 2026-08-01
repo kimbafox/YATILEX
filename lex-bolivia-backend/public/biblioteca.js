@@ -7,6 +7,8 @@ const libraryTitle = document.getElementById("library-title");
 const librarySubtitle = document.getElementById("library-subtitle");
 
 let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+let sessionToken = localStorage.getItem("yatilex_session_token") || "";
+let likedDocKeys = new Set();
 
 const UI_TEXT = {
   es: {
@@ -15,6 +17,11 @@ const UI_TEXT = {
     subtitle: "Selecciona un documento para abrirlo en el lector PDF.",
     filterPlaceholder: "Filtrar por nombre del documento...",
     openDocument: "Abrir documento",
+    addFavorite: "Favorito",
+    removeFavorite: "Quitar favorito",
+    authRequired: "Inicia sesion como profesional para guardar favoritos.",
+    favoriteSaved: "Libro agregado a favoritos.",
+    favoriteRemoved: "Libro quitado de favoritos.",
     noMatch: "No hay documentos que coincidan con el filtro.",
     availablePrefix: "documento(s) disponible(s).",
   },
@@ -24,6 +31,11 @@ const UI_TEXT = {
     subtitle: "PDF lectorpi kicharinapaq huk documento akllay.",
     filterPlaceholder: "Documento sutimanta suysuy...",
     openDocument: "Documento kichariy",
+    addFavorite: "Favorito",
+    removeFavorite: "Favorito qichuy",
+    authRequired: "Profesional hina yaykuy favoritos waqaychanaykipaq.",
+    favoriteSaved: "Libro favoritoman yapasqa.",
+    favoriteRemoved: "Libro favoritomanta qichusqa.",
     noMatch: "Mana documentos tupaqchu kay suysuypi.",
     availablePrefix: "documento(s) kan.",
   },
@@ -33,6 +45,11 @@ const UI_TEXT = {
     subtitle: "Maya documento ajlliñam PDF lectoran jist'arañataki.",
     filterPlaceholder: "Documento sutimpi thaqhaña...",
     openDocument: "Documento jist'araña",
+    addFavorite: "Favorito",
+    removeFavorite: "Favorito apsuña",
+    authRequired: "Profesionaljam mantaña favoritos imañataki.",
+    favoriteSaved: "Librox favoritosar yapxatatawa.",
+    favoriteRemoved: "Librox favoritosat apsutawa.",
     noMatch: "Janiw documentos uka filtro ukampix utjkiti.",
     availablePrefix: "documento(s) utji.",
   },
@@ -150,7 +167,42 @@ librarySearch?.addEventListener("input", () => {
 });
 
 applyLanguage(currentLanguage);
-renderLibrary("");
+hydrateLikedBooks().finally(() => {
+  renderLibrary("");
+});
+
+async function hydrateLikedBooks() {
+  likedDocKeys = new Set();
+
+  if (!sessionToken) {
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/profile/me", {
+      headers: {
+        Authorization: `Bearer ${sessionToken}`,
+      },
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data?.ok) {
+      sessionToken = "";
+      localStorage.removeItem("yatilex_session_token");
+      localStorage.removeItem("yatilex_user");
+      return;
+    }
+
+    const likedBooks = Array.isArray(data.likedBooks) ? data.likedBooks : [];
+    likedBooks.forEach((entry) => {
+      if (entry?.doc_key) {
+        likedDocKeys.add(entry.doc_key);
+      }
+    });
+  } catch {
+    // Keep no-liked fallback when profile cannot be loaded.
+  }
+}
 
 function renderLibrary(filterText) {
   const normalized = normalizeText(filterText);
@@ -172,13 +224,59 @@ function renderLibrary(filterText) {
       <img src="${doc.cover}" alt="Portada de ${doc.title}" class="library-cover" />
       <h3>${doc.title}</h3>
       <p>${getDocumentDescription(doc.key)}</p>
-      <button class="search-btn" type="button">${t("openDocument")}</button>
+      <div class="library-actions">
+        <button class="search-btn open-doc-btn" type="button">${t("openDocument")}</button>
+        <button class="text-btn favorite-doc-btn" type="button">
+          ${likedDocKeys.has(doc.key) ? t("removeFavorite") : t("addFavorite")}
+        </button>
+      </div>
     `;
 
-    const openButton = card.querySelector("button");
+    const openButton = card.querySelector(".open-doc-btn");
     openButton.addEventListener("click", () => {
       const target = `lectura-pdf.html?doc=${encodeURIComponent(doc.key)}&q=${encodeURIComponent(doc.title)}`;
       window.location.href = target;
+    });
+
+    const favoriteButton = card.querySelector(".favorite-doc-btn");
+    favoriteButton?.addEventListener("click", async () => {
+      if (!sessionToken) {
+        libraryStatus.textContent = t("authRequired");
+        return;
+      }
+
+      const liked = !likedDocKeys.has(doc.key);
+
+      try {
+        const response = await fetch("/api/profile/likes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${sessionToken}`,
+          },
+          body: JSON.stringify({
+            docKey: doc.key,
+            liked,
+          }),
+        });
+
+        const data = await response.json();
+        if (!response.ok || !data?.ok) {
+          throw new Error(data?.message || "No se pudo actualizar favorito.");
+        }
+
+        if (data.liked) {
+          likedDocKeys.add(doc.key);
+          libraryStatus.textContent = t("favoriteSaved");
+        } else {
+          likedDocKeys.delete(doc.key);
+          libraryStatus.textContent = t("favoriteRemoved");
+        }
+
+        renderLibrary(librarySearch?.value?.trim() || "");
+      } catch (error) {
+        libraryStatus.textContent = error?.message || "No se pudo actualizar favorito.";
+      }
     });
 
     fragment.appendChild(card);

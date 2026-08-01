@@ -104,7 +104,15 @@ function renderLikes(items) {
     card.innerHTML = `
       <h3>${item.doc_title}</h3>
       <p>Documento: ${item.doc_key}</p>
+      <button class="open-reader-btn" type="button">Abrir libro</button>
     `;
+
+    const openBtn = card.querySelector(".open-reader-btn");
+    openBtn?.addEventListener("click", () => {
+      const target = `lectura-pdf.html?doc=${encodeURIComponent(item.doc_key)}&q=${encodeURIComponent(item.doc_title || "")}`;
+      window.location.href = target;
+    });
+
     fragment.appendChild(card);
   });
 
@@ -128,7 +136,18 @@ function renderNotes(items) {
       <h3>${item.doc_title}</h3>
       <p>Pagina ${item.page_number}</p>
       <p>${note}</p>
+      <button class="open-reader-btn" type="button">Ir a pagina guardada</button>
     `;
+
+    const openBtn = card.querySelector(".open-reader-btn");
+    openBtn?.addEventListener("click", () => {
+      const target =
+        `lectura-pdf.html?doc=${encodeURIComponent(item.doc_key)}` +
+        `&q=${encodeURIComponent(item.doc_title || "")}` +
+        `&page=${encodeURIComponent(item.page_number || 1)}`;
+      window.location.href = target;
+    });
+
     fragment.appendChild(card);
   });
 

@@ -446,6 +446,19 @@ button {
   font-size: 0.9rem;
 }
 
+.library-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.library-actions .text-btn,
+.library-actions .search-btn {
+  width: 100%;
+  justify-content: center;
+}
+
 .mic-btn.listening {
   background: #ffd6c5;
   border-color: #cf6239;
