@@ -102,6 +102,34 @@
           <button class="carousel-nav" id="carousel-next" type="button" aria-label="Siguiente">›</button>
         </div>
       </section>
+
+      <section id="site-assistant" class="site-assistant" hidden aria-label="Asistente del sitio">
+        <div class="site-assistant-head">
+          <h3>Asistente Yatilex</h3>
+          <div class="site-assistant-actions">
+            <button id="assistant-voice-toggle" class="assistant-mini-btn" type="button" aria-pressed="false">
+              Voz off
+            </button>
+            <button id="assistant-close" class="assistant-mini-btn" type="button" aria-label="Cerrar asistente">
+              Cerrar
+            </button>
+          </div>
+        </div>
+
+        <div id="site-assistant-messages" class="site-assistant-messages" aria-live="polite"></div>
+
+        <form id="site-assistant-form" class="site-assistant-form" autocomplete="off">
+          <label for="site-assistant-input" class="sr-only">Escribe al asistente</label>
+          <input
+            id="site-assistant-input"
+            type="text"
+            placeholder="Pregunta como usar esta pagina..."
+            maxlength="400"
+            required
+          />
+          <button id="site-assistant-send" class="search-btn" type="submit">Enviar</button>
+        </form>
+      </section>
     </main>
 
     <script src="app.js" defer></script>

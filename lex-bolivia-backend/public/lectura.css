@@ -121,30 +121,6 @@ body {
   margin: 0;
 }
 
-.panel-badge {
-  border: 1px solid #d6b68f;
-  background: #fff3dd;
-  color: #8f3f25;
-  font-size: 0.76rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  padding: 4px 8px;
-}
-
-.search-highlight {
-  margin: 0 6px 10px;
-  padding: 8px 10px;
-  border: 1px solid #d8c3a5;
-  background: #fff7e9;
-  font-size: 0.92rem;
-}
-
-.search-highlight mark {
-  background: #ffd58f;
-  color: #382109;
-  padding: 1px 5px;
-}
-
 .viewer-toolbar {
   margin: 0 6px 12px;
   display: flex;
@@ -369,8 +345,7 @@ body {
     font-size: 1rem;
   }
 
-  .book-card p,
-  .search-highlight {
+  .book-card p {
     font-size: 0.86rem;
   }
 
@@ -381,11 +356,6 @@ body {
 
   .panel-head h3 {
     font-size: 1rem;
-  }
-
-  .search-highlight {
-    margin: 0 4px 8px;
-    padding: 7px 8px;
   }
 
   .viewer-toolbar {

@@ -37,7 +37,6 @@ const docCover = document.getElementById("doc-cover");
 const docTitle = document.getElementById("doc-title");
 const panelTitle = document.getElementById("panel-title");
 const queryInfo = document.getElementById("query-info");
-const searchHighlight = document.getElementById("search-highlight");
 const prevPageBtn = document.getElementById("prev-page");
 const nextPageBtn = document.getElementById("next-page");
 const zoomOutBtn = document.getElementById("zoom-out");
@@ -72,10 +71,8 @@ panelTitle.textContent = `PDF: ${selectedDoc.title}`;
 
 if (query) {
   queryInfo.textContent = `Clausula buscada: ${query}`;
-  searchHighlight.innerHTML = `Buscando y destacando: <mark>${escapeHtml(query)}</mark>`;
 } else {
   queryInfo.textContent = "Lectura general";
-  searchHighlight.textContent = "Sin clausula destacada.";
 }
 
 const encodedPdfPath = encodeURI(selectedDoc.pdf);
@@ -487,11 +484,3 @@ function extractReferenceFromText(text) {
   return parts.join(", ");
 }
 
-function escapeHtml(value) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}

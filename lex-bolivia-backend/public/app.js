@@ -8,6 +8,13 @@ const input = document.getElementById("search-input");
 const micBtn = document.getElementById("mic-btn");
 const libraryBtn = document.getElementById("library-btn");
 const assistantBtn = document.getElementById("assistant-btn");
+const siteAssistant = document.getElementById("site-assistant");
+const siteAssistantMessages = document.getElementById("site-assistant-messages");
+const siteAssistantForm = document.getElementById("site-assistant-form");
+const siteAssistantInput = document.getElementById("site-assistant-input");
+const siteAssistantSend = document.getElementById("site-assistant-send");
+const assistantCloseBtn = document.getElementById("assistant-close");
+const assistantVoiceToggle = document.getElementById("assistant-voice-toggle");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
@@ -63,6 +70,8 @@ let recognition = null;
 let micState = "idle";
 let liveTranscript = "";
 let micAutoStopTimer = null;
+let siteAssistantHistory = [];
+let assistantVoiceEnabled = false;
 
 if (libraryBtn) {
   libraryBtn.addEventListener("click", () => {
@@ -72,9 +81,63 @@ if (libraryBtn) {
 
 if (assistantBtn) {
   assistantBtn.addEventListener("click", () => {
-    window.location.href = "lectura-pdf.html?doc=constitucion-bolivia&assistant=1";
+    toggleSiteAssistant();
   });
 }
+
+assistantCloseBtn?.addEventListener("click", () => {
+  if (!siteAssistant) {
+    return;
+  }
+
+  siteAssistant.hidden = true;
+});
+
+assistantVoiceToggle?.addEventListener("click", () => {
+  assistantVoiceEnabled = !assistantVoiceEnabled;
+  assistantVoiceToggle.setAttribute("aria-pressed", String(assistantVoiceEnabled));
+  assistantVoiceToggle.textContent = assistantVoiceEnabled ? "Voz on" : "Voz off";
+});
+
+siteAssistantForm?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const question = siteAssistantInput.value.trim();
+
+  if (!question) {
+    return;
+  }
+
+  addSiteAssistantMessage("user", question);
+  siteAssistantInput.value = "";
+  setSiteAssistantLoading(true);
+
+  try {
+    const response = await fetch("/api/assistant/site-guide", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        question,
+        history: siteAssistantHistory,
+      }),
+    });
+
+    const data = await response.json();
+    const text = response.ok && data?.ok
+      ? data.answer || "Puedo ayudarte a usar la pagina principal de Yatilex."
+      : data?.message || "No pude responder ahora, intenta otra vez.";
+
+    addSiteAssistantMessage("assistant", text);
+    speakAssistantText(text);
+  } catch (error) {
+    const fallback = "Error de conexion con el asistente. Intenta nuevamente.";
+    addSiteAssistantMessage("assistant", fallback);
+    speakAssistantText(fallback);
+  } finally {
+    setSiteAssistantLoading(false);
+  }
+});
 
 if (SpeechRecognition) {
   try {
@@ -531,4 +594,66 @@ function clearMicAutoStopTimer() {
     clearTimeout(micAutoStopTimer);
     micAutoStopTimer = null;
   }
+}
+
+function toggleSiteAssistant() {
+  if (!siteAssistant) {
+    return;
+  }
+
+  const willOpen = siteAssistant.hidden;
+  siteAssistant.hidden = !willOpen;
+
+  if (willOpen) {
+    if (!siteAssistantHistory.length) {
+      const intro =
+        "Hola, soy tu asistente de Yatilex. Te explico como usar el buscador, la biblioteca, el microfono y el lector PDF.";
+      addSiteAssistantMessage("assistant", intro);
+      speakAssistantText(intro);
+    }
+
+    setTimeout(() => {
+      siteAssistantInput?.focus();
+      siteAssistant.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 150);
+  }
+}
+
+function addSiteAssistantMessage(role, text) {
+  if (!siteAssistantMessages) {
+    return;
+  }
+
+  const message = document.createElement("article");
+  message.className = `site-assistant-msg ${role === "user" ? "is-user" : "is-assistant"}`;
+  message.textContent = text;
+  siteAssistantMessages.appendChild(message);
+  siteAssistantMessages.scrollTop = siteAssistantMessages.scrollHeight;
+
+  const mappedRole = role === "assistant" ? "model" : "user";
+  siteAssistantHistory.push({ role: mappedRole, text });
+  siteAssistantHistory = siteAssistantHistory.slice(-8);
+}
+
+function setSiteAssistantLoading(isLoading) {
+  if (!siteAssistantInput || !siteAssistantSend) {
+    return;
+  }
+
+  siteAssistantInput.disabled = isLoading;
+  siteAssistantSend.disabled = isLoading;
+  siteAssistantSend.textContent = isLoading ? "Enviando..." : "Enviar";
+}
+
+function speakAssistantText(text) {
+  if (!assistantVoiceEnabled || !window.speechSynthesis) {
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(String(text || ""));
+  utterance.lang = "es-ES";
+  utterance.rate = 1;
+  utterance.pitch = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(utterance);
 }

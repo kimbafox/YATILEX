@@ -18,7 +18,7 @@ const frontendDir = frontendCandidates.find((candidate) =>
 
 const runtimeFrontendDir = frontendDir || path.resolve(projectRoot, "public");
 const geminiModel = process.env.GEMINI_MODEL || "gemini-1.5-flash-latest";
-const geminiApiKey = String(process.env.GEMINI_API_KEY || "").trim();
+const assistantApiKey = String(process.env.GEMINI_API_KEY || "").trim();
 
 app.use(express.json({ limit: "1mb" }));
 
@@ -34,7 +34,7 @@ app.use((req, res, next) => {
   return next();
 });
 
-app.use("/api", createApiRouter({ runtimeFrontendDir, geminiModel, geminiApiKey }));
+app.use("/api", createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }));
 
 app.get("/health", (req, res) => {
   res.status(200).json({
