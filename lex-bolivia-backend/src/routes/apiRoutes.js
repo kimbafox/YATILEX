@@ -11,7 +11,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     apiKey: assistantApiKey,
   });
 
-  async function askSiteGuide(question, history) {
+  async function askSiteGuide(question, history, language) {
     const modelCandidates = Array.from(
       new Set([
         geminiModel || "gemini-1.5-flash-latest",
@@ -23,10 +23,14 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
     const versionCandidates = ["v1beta", "v1"];
 
     const docsSummary = documents.map((doc) => `- ${doc.title}`).join("\n");
+    const langLabel = ["espanol", "quechua", "aymara"].includes(String(language || "").toLowerCase())
+      ? String(language).toLowerCase()
+      : "espanol";
+
     const systemInstruction = [
       "Eres un asistente instructivo de Yatilex.",
       "Explicas como usar la pagina principal, buscador, microfono, biblioteca y lector PDF.",
-      "Habla en espanol simple, claro y breve.",
+      `Responde solo en ${langLabel} con tono claro y breve.`,
       "No des consejos legales; solo orientacion de uso de la plataforma.",
       "Si preguntan por contenidos, menciona solo los documentos disponibles.",
     ].join(" ");
@@ -205,6 +209,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
 
       const question = String(req.body?.question || "").trim();
       const history = req.body?.history;
+      const language = String(req.body?.language || "espanol").trim().toLowerCase();
 
       if (!question) {
         return res.status(400).json({
@@ -213,7 +218,7 @@ function createApiRouter({ runtimeFrontendDir, geminiModel, assistantApiKey }) {
         });
       }
 
-      const answer = await askSiteGuide(question, history);
+      const answer = await askSiteGuide(question, history, language);
 
       return res.status(200).json({
         ok: true,

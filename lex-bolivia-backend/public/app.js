@@ -15,6 +15,9 @@ const siteAssistantInput = document.getElementById("site-assistant-input");
 const siteAssistantSend = document.getElementById("site-assistant-send");
 const assistantCloseBtn = document.getElementById("assistant-close");
 const assistantVoiceToggle = document.getElementById("assistant-voice-toggle");
+const languageButtons = document.querySelectorAll(".lang-chip");
+const assistantCtaLabel = document.querySelector(".assistant-cta-label");
+const searchButtonLabel = document.querySelector(".search-btn span");
 const statusText = document.getElementById("status");
 const resultsContainer = document.getElementById("results");
 const suggestionsContainer = document.getElementById("suggestions");
@@ -72,6 +75,168 @@ let liveTranscript = "";
 let micAutoStopTimer = null;
 let siteAssistantHistory = [];
 let assistantVoiceEnabled = false;
+let currentLanguage = localStorage.getItem("yatilex_lang") || "es";
+
+const UI_TEXT = {
+  es: {
+    searchPlaceholder: "Buscar en Yatilex...",
+    assistantPlaceholder: "Pregunta como usar esta pagina...",
+    statusReady: "Listo para buscar.",
+    statusType: "Escribe algo para buscar.",
+    statusListening: "Escuchando... habla ahora.",
+    statusNoVoice: "Tu navegador no soporta reconocimiento de voz.",
+    statusNeedHttps: "El microfono requiere HTTPS para funcionar.",
+    statusMicBusy: "El microfono ya estaba en uso. Intenta de nuevo.",
+    statusVoiceNoText: "No se detecto texto de voz.",
+    statusSearchingPrefix: "Buscando:",
+    statusBackendError: "Error conectando con el backend. Verifica que este encendido.",
+    assistantIntro:
+      "Hola, soy tu asistente de Yatilex. Te explico como usar el buscador, la biblioteca, el microfono y el lector PDF.",
+    assistantDefault: "Puedo ayudarte a usar la pagina principal de Yatilex.",
+    assistantError: "No pude responder ahora, intenta otra vez.",
+    assistantConnError: "Error de conexion con el asistente. Intenta nuevamente.",
+    assistantLabel: "Asistente",
+    searchBtn: "Buscar",
+    sendBtn: "Enviar",
+    sendBtnLoading: "Enviando...",
+    voiceOn: "Voz on",
+    voiceOff: "Voz off",
+    micErrors: {
+      "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
+      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
+      "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
+      "audio-capture": "No se encontro un microfono disponible.",
+      aborted: "Busqueda por voz cancelada.",
+      network: "Error de red durante el reconocimiento de voz.",
+      "language-not-supported": "Idioma no soportado para reconocimiento de voz.",
+    },
+  },
+  qu: {
+    searchPlaceholder: "Yatilexpi maskay...",
+    assistantPlaceholder: "Kay p'anqata imayna apaykachayta tapuy...",
+    statusReady: "Maskanapaq wakichisqa.",
+    statusType: "Imatapas qillqay maskanapaq.",
+    statusListening: "Uyarisani... rimay kunan.",
+    statusNoVoice: "Kay navegadorqa mana rimay riqsiyta atinchu.",
+    statusNeedHttps: "Microfonoqa HTTPS munan llamk'ananpaq.",
+    statusMicBusy: "Microfonoqa mayqen llamk'aypi kashan. Maymanta yant'ay.",
+    statusVoiceNoText: "Mana rimay qillqa tarisqachu.",
+    statusSearchingPrefix: "Maskaspa:",
+    statusBackendError: "Backendman mana tinkuy atikunchu. Encendido kasqanta qhaway.",
+    assistantIntro:
+      "Napaykuy, noqaqa Yatilex yanapaq kani. Maskaqta, biblioteca-ta, microfono-ta, lector PDF-ta imayna apaykachayta willasayki.",
+    assistantDefault: "Yatilex p'anqa principal apaykachasqayki.",
+    assistantError: "Kunanqa mana kutichiy atikurqachu, hukmanta yachay.",
+    assistantConnError: "Yanapaqwan mana conexion kanchu. Yapamanta yachay.",
+    assistantLabel: "Yanapaq",
+    searchBtn: "Maskay",
+    sendBtn: "Kachay",
+    sendBtnLoading: "Kachachkan...",
+    voiceOn: "Rimay on",
+    voiceOff: "Rimay off",
+    micErrors: {
+      "not-allowed": "Microfono permisoqa manan churakusqachu.",
+      "service-not-allowed": "Rimay servicioqa manan saqillasqachu.",
+      "no-speech": "Manan rimayta uyarisqachu.",
+      "audio-capture": "Microfono manan tarikunchu.",
+      aborted: "Rimay maskayqa sayachisqa.",
+      network: "Rimay riqsiy network pantay.",
+      "language-not-supported": "Kay simiqa manan soportasqachu.",
+    },
+  },
+  ay: {
+    searchPlaceholder: "Yatilexan thaqha...",
+    assistantPlaceholder: "Aka pankan apnaqasiwi tuqit jiskt'asma...",
+    statusReady: "Thaqhata qalltanaatak wakicht'ata.",
+    statusType: "Maya qillqta qillqt'am thaqhanataki.",
+    statusListening: "Ist'twa... jichhax arsu.",
+    statusNoVoice: "Aka navegadorax janiw aru uñt'ayañ yanapt'kiti.",
+    statusNeedHttps: "Microfonox HTTPS muni irnaqañataki.",
+    statusMicBusy: "Microfonox mayni apnaqaskiwa. Mayampi yant'am.",
+    statusVoiceNoText: "Janiw aru qillqata jikxataskiti.",
+    statusSearchingPrefix: "Thaqhasina:",
+    statusBackendError: "Backend ukar mantañax janiw atiskiti. Qhaway qhantayatati.",
+    assistantIntro:
+      "Kamisaki, nayax Yatilex yanapiriwa. Thaqhawi, biblioteca, microfono ukat lector PDF kunjamsa apnaqaña uka yatichaskayma.",
+    assistantDefault: "Yatilex panka principal apnaqañapatak yanapt'irismawa.",
+    assistantError: "Jichhax janiw kutiyañ atiskti, mayampi yant'am.",
+    assistantConnError: "Yanapirimpix janiw conexion utjkiti. Mayampi yant'am.",
+    assistantLabel: "Yanapiri",
+    searchBtn: "Thaqha",
+    sendBtn: "Khita",
+    sendBtnLoading: "Khitaskiwa...",
+    voiceOn: "Aru on",
+    voiceOff: "Aru off",
+    micErrors: {
+      "not-allowed": "Microfono permiso janiw utjkiti.",
+      "service-not-allowed": "Aru servicio janiw habilitado ukhamakiti.",
+      "no-speech": "Janiw aru ist'askiti.",
+      "audio-capture": "Microfono janiw utjkiti.",
+      aborted: "Aru thaqhawi sayt'atawa.",
+      network: "Aru riqsina red pantjawi.",
+      "language-not-supported": "Aka aru janiw yanapt'atakiti.",
+    },
+  },
+};
+
+const speechLanguageByUiLanguage = {
+  es: "es-ES",
+  qu: "qu-PE",
+  ay: "ay-BO",
+};
+
+const assistantLanguageLabel = {
+  es: "espanol",
+  qu: "quechua",
+  ay: "aymara",
+};
+
+function t(key) {
+  const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
+  return UI_TEXT[lang][key] ?? UI_TEXT.es[key] ?? "";
+}
+
+function micErrorText(code) {
+  const lang = UI_TEXT[currentLanguage] ? currentLanguage : "es";
+  return UI_TEXT[lang].micErrors?.[code] || UI_TEXT.es.micErrors?.[code] || `Error: ${code}`;
+}
+
+function applyLanguage(language) {
+  currentLanguage = UI_TEXT[language] ? language : "es";
+  localStorage.setItem("yatilex_lang", currentLanguage);
+
+  if (input) {
+    input.placeholder = t("searchPlaceholder");
+  }
+
+  if (siteAssistantInput) {
+    siteAssistantInput.placeholder = t("assistantPlaceholder");
+  }
+
+  if (assistantCtaLabel) {
+    assistantCtaLabel.textContent = t("assistantLabel");
+  }
+
+  if (searchButtonLabel) {
+    searchButtonLabel.textContent = t("searchBtn");
+  }
+
+  if (statusText) {
+    statusText.textContent = t("statusReady");
+  }
+
+  if (assistantVoiceToggle) {
+    assistantVoiceToggle.textContent = assistantVoiceEnabled ? t("voiceOn") : t("voiceOff");
+  }
+
+  languageButtons.forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === currentLanguage));
+  });
+
+  if (recognition) {
+    recognition.lang = speechLanguageByUiLanguage[currentLanguage] || "es-ES";
+  }
+}
 
 if (libraryBtn) {
   libraryBtn.addEventListener("click", () => {
@@ -84,6 +249,12 @@ if (assistantBtn) {
     toggleSiteAssistant();
   });
 }
+
+languageButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    applyLanguage(button.dataset.lang || "es");
+  });
+});
 
 assistantCloseBtn?.addEventListener("click", () => {
   if (!siteAssistant) {
@@ -100,7 +271,7 @@ assistantCloseBtn?.addEventListener("click", () => {
 assistantVoiceToggle?.addEventListener("click", () => {
   assistantVoiceEnabled = !assistantVoiceEnabled;
   assistantVoiceToggle.setAttribute("aria-pressed", String(assistantVoiceEnabled));
-  assistantVoiceToggle.textContent = assistantVoiceEnabled ? "Voz on" : "Voz off";
+  assistantVoiceToggle.textContent = assistantVoiceEnabled ? t("voiceOn") : t("voiceOff");
 });
 
 siteAssistantForm?.addEventListener("submit", async (event) => {
@@ -124,18 +295,19 @@ siteAssistantForm?.addEventListener("submit", async (event) => {
       body: JSON.stringify({
         question,
         history: siteAssistantHistory,
+        language: assistantLanguageLabel[currentLanguage] || "espanol",
       }),
     });
 
     const data = await response.json();
     const text = response.ok && data?.ok
-      ? data.answer || "Puedo ayudarte a usar la pagina principal de Yatilex."
-      : data?.message || "No pude responder ahora, intenta otra vez.";
+      ? data.answer || t("assistantDefault")
+      : data?.message || t("assistantError");
 
     addSiteAssistantMessage("assistant", text);
     speakAssistantText(text);
   } catch (error) {
-    const fallback = "Error de conexion con el asistente. Intenta nuevamente.";
+    const fallback = t("assistantConnError");
     addSiteAssistantMessage("assistant", fallback);
     speakAssistantText(fallback);
   } finally {
@@ -146,7 +318,7 @@ siteAssistantForm?.addEventListener("submit", async (event) => {
 if (SpeechRecognition) {
   try {
     recognition = new SpeechRecognition();
-    recognition.lang = "es-ES";
+    recognition.lang = speechLanguageByUiLanguage[currentLanguage] || "es-ES";
     recognition.interimResults = true;
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
@@ -161,7 +333,7 @@ if (recognition) {
     micBtn.classList.add("listening");
     micBtn.setAttribute("aria-pressed", "true");
     setVoiceState("recording");
-    setStatus("Escuchando... habla ahora.");
+    setStatus(t("statusListening"));
 
     clearMicAutoStopTimer();
     micAutoStopTimer = setTimeout(() => {
@@ -202,17 +374,7 @@ if (recognition) {
   };
 
   recognition.onerror = (event) => {
-    const errorMessages = {
-      "not-allowed": "Permiso de microfono denegado. Habilitalo en el navegador.",
-      "service-not-allowed": "El servicio de voz no esta permitido en este navegador.",
-      "no-speech": "No se detecto voz. Intenta hablar mas cerca del microfono.",
-      "audio-capture": "No se encontro un microfono disponible.",
-      aborted: "Busqueda por voz cancelada.",
-      network: "Error de red durante el reconocimiento de voz.",
-      "language-not-supported": "Idioma no soportado para reconocimiento de voz.",
-    };
-
-    setStatus(errorMessages[event.error] || `No se pudo usar el microfono: ${event.error}`);
+    setStatus(micErrorText(event.error) || `Error: ${event.error}`);
   };
 
   recognition.onend = () => {
@@ -226,7 +388,7 @@ if (recognition) {
 } else {
   micBtn.disabled = true;
   micBtn.setAttribute("aria-pressed", "false");
-  setStatus("Tu navegador no soporta reconocimiento de voz.");
+  setStatus(t("statusNoVoice"));
 }
 
 micBtn.addEventListener("click", () => {
@@ -235,7 +397,7 @@ micBtn.addEventListener("click", () => {
   }
 
   if (!window.isSecureContext) {
-    setStatus("El microfono requiere HTTPS para funcionar.");
+    setStatus(t("statusNeedHttps"));
     return;
   }
 
@@ -255,7 +417,7 @@ micBtn.addEventListener("click", () => {
     recognition.start();
   } catch (error) {
     micState = "idle";
-    setStatus("El microfono ya estaba en uso. Intenta de nuevo.");
+    setStatus(t("statusMicBusy"));
   }
 });
 
@@ -264,7 +426,7 @@ form.addEventListener("submit", async (event) => {
   const query = input.value.trim();
 
   if (!query) {
-    setStatus("Escribe algo para buscar.");
+    setStatus(t("statusType"));
     return;
   }
 
@@ -277,6 +439,8 @@ if (carouselTrack) {
   carouselNext?.addEventListener("click", () => moveCarousel(1));
   startCarouselAutoRotate();
 }
+
+applyLanguage(currentLanguage);
 
 input.addEventListener("input", () => {
   activeSuggestionIndex = -1;
@@ -318,7 +482,7 @@ document.addEventListener("click", (event) => {
 
 async function searchByVoice(query) {
   if (!query) {
-    setStatus("No se detecto texto de voz.");
+    setStatus(t("statusVoiceNoText"));
     return;
   }
 
@@ -333,7 +497,7 @@ async function search(query, endpoint) {
     return;
   }
 
-  setStatus(`Buscando: "${query}"`);
+  setStatus(`${t("statusSearchingPrefix")} "${query}"`);
 
   try {
     const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
@@ -352,7 +516,7 @@ async function search(query, endpoint) {
     renderResults(data.results || []);
     setStatus(data.message || `Se encontraron ${data.results?.length ?? 0} resultados.`);
   } catch (error) {
-    setStatus("Error conectando con el backend. Verifica que este encendido.");
+    setStatus(t("statusBackendError"));
     renderResults([]);
   }
 }
@@ -610,8 +774,7 @@ function toggleSiteAssistant() {
 
   if (willOpen) {
     if (!siteAssistantHistory.length) {
-      const intro =
-        "Hola, soy tu asistente de Yatilex. Te explico como usar el buscador, la biblioteca, el microfono y el lector PDF.";
+      const intro = t("assistantIntro");
       addSiteAssistantMessage("assistant", intro);
       speakAssistantText(intro);
     }
@@ -663,7 +826,7 @@ function setSiteAssistantLoading(isLoading) {
 
   siteAssistantInput.disabled = isLoading;
   siteAssistantSend.disabled = isLoading;
-  siteAssistantSend.textContent = isLoading ? "Enviando..." : "Enviar";
+  siteAssistantSend.textContent = isLoading ? t("sendBtnLoading") : t("sendBtn");
 }
 
 function speakAssistantText(text) {
@@ -672,7 +835,7 @@ function speakAssistantText(text) {
   }
 
   const utterance = new SpeechSynthesisUtterance(String(text || ""));
-  utterance.lang = "es-ES";
+  utterance.lang = speechLanguageByUiLanguage[currentLanguage] || "es-ES";
   utterance.rate = 1;
   utterance.pitch = 1;
   window.speechSynthesis.cancel();

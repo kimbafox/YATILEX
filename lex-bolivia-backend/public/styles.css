@@ -244,6 +244,39 @@ button {
   animation: reveal 0.7s ease;
 }
 
+.language-switch {
+  width: min(760px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.lang-chip {
+  border: 1px solid #cfb48f;
+  background: #fff8eb;
+  color: #6c3320;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.lang-chip:hover {
+  transform: translateY(-1px);
+  background: #fff2de;
+}
+
+.lang-chip[aria-pressed="true"] {
+  background: linear-gradient(145deg, #ef7d35, #cf5c1f);
+  color: #fff;
+  border-color: #be5520;
+}
+
 .assistant-cta-wrap {
   width: min(760px, 100%);
   display: flex;
@@ -837,6 +870,19 @@ button {
   .hero {
     min-height: auto;
     padding-top: 28px;
+  }
+
+  .language-switch {
+    margin-bottom: 8px;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .lang-chip {
+    white-space: nowrap;
+    font-size: 0.82rem;
+    padding: 6px 10px;
   }
 
   .assistant-cta-wrap {
